@@ -35,7 +35,7 @@ class AuthProvider extends ChangeNotifier {
   String _statusLog = '';
   String _selectedGroup = '10-25-guruh o\'quvchilari';
 
-  final TextEditingController serviceIdController = TextEditingController(text: '10-25-0842');
+  final TextEditingController loginController = TextEditingController(text: 'student_1025');
   final TextEditingController passwordController = TextEditingController(text: '••••••••');
 
   UserRole get selectedRole => _selectedRole;
@@ -75,35 +75,35 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> login() async {
-    final serviceId = serviceIdController.text.trim();
-    final password = passwordController.text.trim();
+    final loginText = loginController.text.trim();
+    final passwordText = passwordController.text.trim();
 
-    if (serviceId.isEmpty) {
-      _errorMessage = 'O\'quvchi ID / Guvohnoma raqamini kiriting!';
+    if (loginText.isEmpty) {
+      _errorMessage = 'Login (foydalanuvchi nomi)ni kiriting!';
       notifyListeners();
       return false;
     }
 
-    if (password.isEmpty) {
-      _errorMessage = 'Parolingizni kiriting!';
+    if (passwordText.isEmpty) {
+      _errorMessage = 'Parolni kiriting!';
       notifyListeners();
       return false;
     }
 
     _errorMessage = null;
     _isLoading = true;
-    _statusLog = 'Lokal server bilan aloqa o\'rnatilmoqda...';
+    _statusLog = 'Lokal server bilan bog\'lanilmoqda...';
     notifyListeners();
 
     await Future.delayed(const Duration(milliseconds: 700));
-    _statusLog = 'O\'quvchi ma\'lumotlari va bilim darajasi tekshirilmoqda...';
+    _statusLog = 'Login va parol tasdiqlanmoqda...';
     notifyListeners();
 
     await Future.delayed(const Duration(milliseconds: 800));
-    _statusLog = 'BilimScan tizimiga xush kelibsiz!';
+    _statusLog = 'Muvaffaqiyatli! BilimScan tizimiga xush kelibsiz!';
     notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 400));
     _isLoading = false;
     notifyListeners();
 
@@ -117,7 +117,7 @@ class AuthProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    serviceIdController.dispose();
+    loginController.dispose();
     passwordController.dispose();
     super.dispose();
   }

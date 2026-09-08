@@ -15,6 +15,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
+
   late AnimationController _logoController;
   late AnimationController _textController;
   late AnimationController _progressController;
@@ -99,21 +100,21 @@ class _SplashScreenState extends State<SplashScreen>
     await _progressController.forward();
     await Future.delayed(const Duration(milliseconds: 400));
 
-    // if (mounted) {
-    //   Navigator.of(context).pushReplacement(
-    //     PageRouteBuilder(
-    //       pageBuilder: (context, animation, secondaryAnimation) =>
-    //           const LoginScreen(),
-    //       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-    //         return FadeTransition(
-    //           opacity: animation,
-    //           child: child,
-    //         );
-    //       },
-    //       transitionDuration: const Duration(milliseconds: 800),
-    //     ),
-    //   );
-    // }
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const LoginScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 800),
+        ),
+      );
+    }
   }
 
   @override

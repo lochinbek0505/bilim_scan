@@ -140,7 +140,7 @@ class HomeScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'XUSH KELIBSIZ, ${authProvider.serviceIdController.text.toUpperCase()}!',
+                            'XUSH KELIBSIZ, ${authProvider.loginController.text.toUpperCase()}!',
                             style: AppTextStyles.titleHeader.copyWith(
                               fontSize: 18,
                               color: AppColors.goldPrimary,

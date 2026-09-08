@@ -83,22 +83,24 @@ class _LoginScreenState extends State<LoginScreen>
                           _buildRightLoginForm(context),
                         ],
                       )
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            flex: 5,
-                            child: _buildLeftHeroPanel(context, isCompact: false),
-                          ),
-                          Container(
-                            width: 1.5,
-                            color: AppColors.cardBorder,
-                          ),
-                          Expanded(
-                            flex: 6,
-                            child: _buildRightLoginForm(context),
-                          ),
-                        ],
+                    : IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              flex: 5,
+                              child: _buildLeftHeroPanel(context, isCompact: false),
+                            ),
+                            Container(
+                              width: 1.5,
+                              color: AppColors.cardBorder,
+                            ),
+                            Expanded(
+                              flex: 6,
+                              child: _buildRightLoginForm(context),
+                            ),
+                          ],
+                        ),
                       ),
               ),
             ),
@@ -119,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Tag
+          // Header Badge
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -220,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen>
 
           if (!isCompact) const SizedBox(height: 28),
 
-          // Feature list badges from BilimScan poster
+          // Feature list badges
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -352,7 +354,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  // Right Login Form Panel
+  // Right Login Form Panel (Login & Parol)
   Widget _buildRightLoginForm(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
@@ -363,16 +365,26 @@ class _LoginScreenState extends State<LoginScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Header
-              Text(
-                'TIZIMGA KIRISH',
-                style: AppTextStyles.titleHeader.copyWith(
-                  fontSize: 22,
-                  color: AppColors.goldPrimary,
-                ),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.lock_person_outlined,
+                    color: AppColors.goldPrimary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'TIZIMGA KIRISH',
+                    style: AppTextStyles.titleHeader.copyWith(
+                      fontSize: 22,
+                      color: AppColors.goldPrimary,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
-                'BilimScan tizimiga kirish uchun ma\'lumotlaringizni kiriting',
+                'BilimScan tizimiga kirish uchun login va parolingizni kiriting',
                 style: AppTextStyles.bodyText.copyWith(
                   fontSize: 13,
                   color: AppColors.textSecondary,
@@ -454,24 +466,52 @@ class _LoginScreenState extends State<LoginScreen>
 
               const SizedBox(height: 20),
 
-              // Service ID Field
-              _buildInputFieldLabel('O\'QUVCHI ID / GUVOHNOMA RAQAMI'),
+              // LOGIN FIELD
+              _buildInputFieldLabel('LOGIN (FOYDALANUVCHI NOMI)'),
               const SizedBox(height: 6),
               TextField(
-                controller: authProvider.serviceIdController,
+                controller: authProvider.loginController,
                 style: AppTextStyles.bodyText.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w600,
                 ),
                 decoration: _inputDecoration(
-                  hintText: 'Masalan: 10-25-0842',
-                  prefixIcon: Icons.badge_outlined,
+                  hintText: 'Loginingizni kiriting (Masalan: student_1025)',
+                  prefixIcon: Icons.person_outline_rounded,
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // Group Selection Dropdown
+              // PAROL FIELD
+              _buildInputFieldLabel('PAROL'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: authProvider.passwordController,
+                obscureText: authProvider.obscurePassword,
+                style: AppTextStyles.bodyText.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+                decoration: _inputDecoration(
+                  hintText: 'Maxfiy parolingizni kiriting',
+                  prefixIcon: Icons.lock_outline_rounded,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      authProvider.obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: AppColors.textMuted,
+                      size: 20,
+                    ),
+                    onPressed: () => authProvider.togglePasswordVisibility(),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // GROUP SELECTION DROPDOWN
               _buildInputFieldLabel('O\'QUV GURUHI'),
               const SizedBox(height: 6),
               Container(
@@ -515,34 +555,6 @@ class _LoginScreenState extends State<LoginScreen>
                     onChanged: (value) {
                       if (value != null) authProvider.setGroup(value);
                     },
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Password Field
-              _buildInputFieldLabel('PAROL'),
-              const SizedBox(height: 6),
-              TextField(
-                controller: authProvider.passwordController,
-                obscureText: authProvider.obscurePassword,
-                style: AppTextStyles.bodyText.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-                decoration: _inputDecoration(
-                  hintText: 'Maxfiy parolingizni kiriting',
-                  prefixIcon: Icons.lock_outline,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      authProvider.obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      color: AppColors.textMuted,
-                      size: 20,
-                    ),
-                    onPressed: () => authProvider.togglePasswordVisibility(),
                   ),
                 ),
               ),
