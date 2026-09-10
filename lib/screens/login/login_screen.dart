@@ -392,82 +392,11 @@ class _LoginScreenState extends State<LoginScreen>
               ),
               const SizedBox(height: 22),
 
-              // Role Selection Segmented Tabs
-              Text(
-                'FOYDALANUVCHI MAQOMI:',
-                style: AppTextStyles.badgeText.copyWith(
-                  fontSize: 11,
-                  color: AppColors.textMuted,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppColors.inputBackground,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: Row(
-                  children: UserRole.values.map((role) {
-                    final isSelected = authProvider.selectedRole == role;
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () => authProvider.setRole(role),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.goldPrimary
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: AppColors.goldPrimary
-                                          .withValues(alpha: 0.3),
-                                      blurRadius: 8,
-                                    )
-                                  ]
-                                : [],
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                _getRoleIcon(role),
-                                size: 18,
-                                color: isSelected
-                                    ? AppColors.backgroundDark
-                                    : AppColors.textSecondary,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                role.title.split(' ').first,
-                                textAlign: TextAlign.center,
-                                style: AppTextStyles.bodyText.copyWith(
-                                  fontSize: 11,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
-                                  color: isSelected
-                                      ? AppColors.backgroundDark
-                                      : AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
 
               const SizedBox(height: 20),
 
               // LOGIN FIELD
-              _buildInputFieldLabel('LOGIN (FOYDALANUVCHI NOMI)'),
+              _buildInputFieldLabel('FOYDALANUVCHI NOMI'),
               const SizedBox(height: 6),
               TextField(
                 controller: authProvider.loginController,
@@ -511,53 +440,6 @@ class _LoginScreenState extends State<LoginScreen>
 
               const SizedBox(height: 16),
 
-              // GROUP SELECTION DROPDOWN
-              _buildInputFieldLabel('O\'QUV GURUHI'),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.inputBackground,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: authProvider.selectedGroup,
-                    dropdownColor: AppColors.cardDark,
-                    isExpanded: true,
-                    icon: const Icon(
-                      Icons.keyboard_arrow_down,
-                      color: AppColors.goldPrimary,
-                    ),
-                    items: authProvider.availableGroups.map((String group) {
-                      return DropdownMenuItem<String>(
-                        value: group,
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.groups_outlined,
-                              size: 18,
-                              color: AppColors.emeraldAccent,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              group,
-                              style: AppTextStyles.bodyText.copyWith(
-                                color: AppColors.textPrimary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) authProvider.setGroup(value);
-                    },
-                  ),
-                ),
-              ),
 
               const SizedBox(height: 14),
 
@@ -726,7 +608,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                                 const SizedBox(width: 10),
                                 Text(
-                                  'TIZIMGA KIRISH (LOGIN)',
+                                  'TIZIMGA KIRISH',
                                   style: AppTextStyles.buttonText.copyWith(
                                     fontWeight: FontWeight.w800,
                                   ),

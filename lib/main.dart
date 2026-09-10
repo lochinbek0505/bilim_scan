@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/constants/app_colors.dart';
 import 'providers/auth_provider.dart';
+import 'providers/test_provider.dart';
+import 'providers/edu_plan_provider.dart';
 import 'screens/splash/splash_screen.dart';
 
 void main() {
@@ -17,6 +19,8 @@ class BilimScanApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => TestProvider()),
+        ChangeNotifierProvider(create: (_) => EduPlanProvider()),
       ],
       child: MaterialApp(
         title: 'IIV Akademik Litseyi - Bilim Scan',
