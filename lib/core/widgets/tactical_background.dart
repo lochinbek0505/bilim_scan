@@ -150,7 +150,6 @@ class _TacticalFramePainter extends CustomPainter {
     // Bottom-Left Corner
     canvas.drawLine(Offset(padding, size.height - padding), Offset(padding + cornerLen, size.height - padding), paint);
     canvas.drawLine(Offset(padding, size.height - padding), Offset(padding, size.height - padding - cornerLen), paint);
-
     // Bottom-Right Corner
     canvas.drawLine(Offset(size.width - padding, size.height - padding), Offset(size.width - padding - cornerLen, size.height - padding), paint);
     canvas.drawLine(Offset(size.width - padding, size.height - padding), Offset(size.width - padding, size.height - padding - cornerLen), paint);

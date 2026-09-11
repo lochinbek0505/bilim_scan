@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../login/login_screen.dart';
 import '../test_management/test_management_screen.dart';
 import '../edu_plan_management/edu_plan_management_screen.dart';
+import '../exam_management/exam_management_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -147,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 14),
 
-              // Main Administrator Modules Grid (10 Modules)
+              // Main Administrator Modules Grid (11 Modules)
               Expanded(
                 child: SingleChildScrollView(
                   child: GridView.count(
@@ -158,13 +159,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSpacing: 16,
                     childAspectRatio: 1.55,
                     children: [
-                      // 1. Test Yaratish
+                      // 1. Imtihon Yaratish & Boshqarish
                       _buildAdminModuleCard(
-                        title: '1. TESTLARNI BOSHQARISH (CRUD)',
+                        title: '1. IMTIHON YARATISH',
+                        subtitle: 'Mavjud testlar va guruhlar asosida imtihon seanslarini biriktirish va sozlash',
+                        badgeText: 'Imtihonlar',
+                        icon: Icons.note_add_outlined,
+                        accentColor: AppColors.goldPrimary,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => const ExamManagementScreen()),
+                          );
+                        },
+                      ),
+
+                      // 2. Test Yaratish
+                      _buildAdminModuleCard(
+                        title: '2. TESTLARNI BOSHQARISH (CRUD)',
                         subtitle: 'Elektron va skanerlanadigan diagnostika testlar bankini shakllantirish hamda JSON fayldan savollarni yuklash',
                         badgeText: 'Test Banki',
                         icon: Icons.assignment_add,
-                        accentColor: AppColors.goldPrimary,
+                        accentColor: AppColors.emeraldAccent,
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(builder: (context) => const TestManagementScreen()),
@@ -172,19 +187,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
 
-                      // 2. Test Natijalari
+                      // 3. Test Natijalari
                       _buildAdminModuleCard(
-                        title: '2. TEST NATIJALARI',
+                        title: '3. TEST NATIJALARI',
                         subtitle: 'Skanerlangan test va elektron diagnostika javoblarini ko\'rish',
                         badgeText: 'Natijalar',
                         icon: Icons.fact_check_outlined,
-                        accentColor: AppColors.emeraldAccent,
+                        accentColor: const Color(0xFF0EA5E9),
                         onTap: () => _showTestResultsDialog(context),
                       ),
 
-                      // 3. User Yaratish
+                      // 4. User Yaratish
                       _buildAdminModuleCard(
-                        title: '3. USER YARATISH',
+                        title: '4. USER YARATISH',
                         subtitle: 'O\'quvchilar, o\'qituvchilar va administratorlar hisoblarini boshqarish',
                         badgeText: 'Foydalanuvchilar',
                         icon: Icons.person_add_alt_1_outlined,
@@ -192,9 +207,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () => _showCreateUserDialog(context),
                       ),
 
-                      // 4. O'quv Reja
+                      // 5. O'quv Reja
                       _buildAdminModuleCard(
-                        title: '4. O\'QUV REJALARI (EDU PLAN CRUD)',
+                        title: '5. O\'QUV REJALARI (EDU PLAN CRUD)',
                         subtitle: 'Yillik va semestrlik o\'quv rejalari, soatlar taqsimoti, mavzular va JSON fayl importi',
                         badgeText: 'O\'quv reja',
                         icon: Icons.calendar_month_outlined,
@@ -206,19 +221,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
 
-                      // 5. Kurs Bosqichi
+                      // 6. Kurs Bosqichi
                       _buildAdminModuleCard(
-                        title: '5. KURS BOSQICHI',
+                        title: '6. KURS BOSQICHI',
                         subtitle: '1-kurs va 2-kurs bosqichlari hamda o\'quv yillarini shakllantirish',
                         badgeText: 'O\'quv yili',
                         icon: Icons.stairs_outlined,
-                        accentColor: const Color(0xFF0EA5E9),
+                        accentColor: const Color(0xFF8B5CF6),
                         onTap: () => _showCourseLevelDialog(context),
                       ),
 
-                      // 6. Guruhlar
+                      // 7. Guruhlar
                       _buildAdminModuleCard(
-                        title: '6. GURUHLAR BOSHQARUVI',
+                        title: '7. GURUHLAR BOSHQARUVI',
                         subtitle: 'Akademik litsey o\'quv guruhlari ro\'yxati va biriktiruvlarini yaratish',
                         badgeText: 'Guruhlar',
                         icon: Icons.groups_3_outlined,
@@ -226,9 +241,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () => _showGroupManagementDialog(context),
                       ),
 
-                      // 7. Kafedra
+                      // 8. Kafedra
                       _buildAdminModuleCard(
-                        title: '7. KAFEDRALAR',
+                        title: '8. KAFEDRALAR',
                         subtitle: 'Informatika va AT, Tillar hamda Aniqlik fanlar kafedralari',
                         badgeText: 'Kafedralar',
                         icon: Icons.account_balance_outlined,
@@ -236,9 +251,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () => _showDepartmentDialog(context),
                       ),
 
-                      // 8. Fanlar
+                      // 9. Fanlar
                       _buildAdminModuleCard(
-                        title: '8. FANLAR VA MAVZULAR',
+                        title: '9. FANLAR VA MAVZULAR',
                         subtitle: 'O\'quv fanlari, bo\'limlar va diagnostika mavzulari katalogi',
                         badgeText: 'Fanlar',
                         icon: Icons.menu_book_outlined,
@@ -246,9 +261,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () => _showSubjectDialog(context),
                       ),
 
-                      // 9. Tahlil
+                      // 10. Tahlil
                       _buildAdminModuleCard(
-                        title: '9. BILIMDAGI BO\'SHLIQLAR TAHLILI',
+                        title: '10. BILIMDAGI BO\'SHLIQLAR TAHLILI',
                         subtitle: 'O\'quvchilarning bilim bo\'shliqlarini avtomatik diagnostika qilish',
                         badgeText: 'AI Tahlil',
                         icon: Icons.psychology_outlined,
@@ -256,9 +271,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () => _showAnalysisDialog(context),
                       ),
 
-                      // 10. Statistika
+                      // 11. Statistika
                       _buildAdminModuleCard(
-                        title: '10. STATISTIKA VA MONITORING',
+                        title: '11. STATISTIKA VA MONITORING',
                         subtitle: 'Guruhlar, fanlar va o\'zlashtirish dinamikasi bo\'yicha tahliliy hisobot',
                         badgeText: 'Analitika',
                         icon: Icons.bar_chart_rounded,
@@ -546,7 +561,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // --- DIALOG MODALS FOR ADMINISTRATOR ACTIONS ---
 
-  // 2. TEST NATIJALARI DIALOG
+  // 3. TEST NATIJALARI DIALOG
   void _showTestResultsDialog(BuildContext context) {
     _showAdminModal(
       context: context,
@@ -565,7 +580,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 3. USER YARATISH DIALOG
+  // 4. USER YARATISH DIALOG
   void _showCreateUserDialog(BuildContext context) {
     _showAdminModal(
       context: context,
@@ -591,7 +606,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 5. KURS BOSQICHI DIALOG
+  // 6. KURS BOSQICHI DIALOG
   void _showCourseLevelDialog(BuildContext context) {
     _showAdminModal(
       context: context,
@@ -608,7 +623,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 6. GURUHLAR BOSHQARUVI DIALOG
+  // 7. GURUHLAR BOSHQARUVI DIALOG
   void _showGroupManagementDialog(BuildContext context) {
     _showAdminModal(
       context: context,
@@ -627,7 +642,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 7. KAFEDRALAR DIALOG
+  // 8. KAFEDRALAR DIALOG
   void _showDepartmentDialog(BuildContext context) {
     _showAdminModal(
       context: context,
@@ -646,7 +661,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 8. FANLAR VA MAVZULAR DIALOG
+  // 9. FANLAR VA MAVZULAR DIALOG
   void _showSubjectDialog(BuildContext context) {
     _showAdminModal(
       context: context,
@@ -665,7 +680,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 9. TAHLIL DIALOG
+  // 10. TAHLIL DIALOG
   void _showAnalysisDialog(BuildContext context) {
     _showAdminModal(
       context: context,
@@ -693,7 +708,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 10. STATISTIKA DIALOG
+  // 11. STATISTIKA DIALOG
   void _showStatisticsDialog(BuildContext context) {
     _showAdminModal(
       context: context,
