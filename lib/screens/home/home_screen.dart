@@ -5,10 +5,10 @@ import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../providers/auth_provider.dart';
-import '../login/login_screen.dart';
 import '../test_management/test_management_screen.dart';
 import '../edu_plan_management/edu_plan_management_screen.dart';
 import '../exam_management/exam_management_screen.dart';
+import '../catalog_management/catalog_management_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -102,9 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.logout, color: AppColors.error),
               tooltip: 'Tizimdan chiqish',
               onPressed: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
+                authProvider.logout();
               },
             ),
             const SizedBox(width: 8),
@@ -224,41 +222,57 @@ class _HomeScreenState extends State<HomeScreen> {
                       // 6. Kurs Bosqichi
                       _buildAdminModuleCard(
                         title: '6. KURS BOSQICHI',
-                        subtitle: '1-kurs va 2-kurs bosqichlari hamda o\'quv yillarini shakllantirish',
-                        badgeText: 'O\'quv yili',
+                        subtitle: '1-kurs va 2-kurs bosqichlari ma\'lumotnomasi va tahrirlash',
+                        badgeText: 'Bosqichlar',
                         icon: Icons.stairs_outlined,
                         accentColor: const Color(0xFF8B5CF6),
-                        onTap: () => _showCourseLevelDialog(context),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => const CatalogManagementScreen(initialTabIndex: 0)),
+                          );
+                        },
                       ),
 
                       // 7. Guruhlar
                       _buildAdminModuleCard(
                         title: '7. GURUHLAR BOSHQARUVI',
-                        subtitle: 'Akademik litsey o\'quv guruhlari ro\'yxati va biriktiruvlarini yaratish',
+                        subtitle: 'Akademik litsey o\'quv guruhlari ro\'yxati, yaratish va tahrirlash',
                         badgeText: 'Guruhlar',
                         icon: Icons.groups_3_outlined,
                         accentColor: const Color(0xFFA855F7),
-                        onTap: () => _showGroupManagementDialog(context),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => const CatalogManagementScreen(initialTabIndex: 2)),
+                          );
+                        },
                       ),
 
                       // 8. Kafedra
                       _buildAdminModuleCard(
                         title: '8. KAFEDRALAR',
-                        subtitle: 'Informatika va AT, Tillar hamda Aniqlik fanlar kafedralari',
+                        subtitle: 'Informatika va AT, Tillar hamda Aniqlik fanlar kafedralari katalogi',
                         badgeText: 'Kafedralar',
                         icon: Icons.account_balance_outlined,
                         accentColor: AppColors.emeraldAccent,
-                        onTap: () => _showDepartmentDialog(context),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => const CatalogManagementScreen(initialTabIndex: 3)),
+                          );
+                        },
                       ),
 
                       // 9. Fanlar
                       _buildAdminModuleCard(
-                        title: '9. FANLAR VA MAVZULAR',
-                        subtitle: 'O\'quv fanlari, bo\'limlar va diagnostika mavzulari katalogi',
+                        title: '9. FANLAR KATALOGI',
+                        subtitle: 'O\'quv fanlari katalogini yaratish, tahrirlash va o\'chirish',
                         badgeText: 'Fanlar',
                         icon: Icons.menu_book_outlined,
                         accentColor: AppColors.goldPrimary,
-                        onTap: () => _showSubjectDialog(context),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => const CatalogManagementScreen(initialTabIndex: 1)),
+                          );
+                        },
                       ),
 
                       // 10. Tahlil
@@ -601,80 +615,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 12),
           _buildModalTextField(label: 'ROLI', hint: 'O\'quvchi / O\'qituvchi / Admin'),
-        ],
-      ),
-    );
-  }
-
-  // 6. KURS BOSQICHI DIALOG
-  void _showCourseLevelDialog(BuildContext context) {
-    _showAdminModal(
-      context: context,
-      title: 'KURS BOSQICHLARI',
-      icon: Icons.stairs_outlined,
-      accentColor: const Color(0xFF0EA5E9),
-      child: Column(
-        children: [
-          _buildSimpleListItem('1-Kurs bosqichi', '120 ta o\'quvchi • 6 ta guruh'),
-          const SizedBox(height: 8),
-          _buildSimpleListItem('2-Kurs bosqichi', '130 ta o\'quvchi • 6 ta guruh'),
-        ],
-      ),
-    );
-  }
-
-  // 7. GURUHLAR BOSHQARUVI DIALOG
-  void _showGroupManagementDialog(BuildContext context) {
-    _showAdminModal(
-      context: context,
-      title: 'GURUHLAR BOSHQARUVI',
-      icon: Icons.groups_3_outlined,
-      accentColor: const Color(0xFFA855F7),
-      child: Column(
-        children: [
-          _buildSimpleListItem('10-25-guruh o\'quvchilari', 'Informatika va AT yo\'nalishi'),
-          const SizedBox(height: 8),
-          _buildSimpleListItem('1-O\'quv guruhi', 'Aniqlik va tabiiy fanlar'),
-          const SizedBox(height: 8),
-          _buildSimpleListItem('2-O\'quv guruhi', 'Ijtimoiy-gumanitar yo\'nalish'),
-        ],
-      ),
-    );
-  }
-
-  // 8. KAFEDRALAR DIALOG
-  void _showDepartmentDialog(BuildContext context) {
-    _showAdminModal(
-      context: context,
-      title: 'LITSEY KAFEDRALARI',
-      icon: Icons.account_balance_outlined,
-      accentColor: AppColors.emeraldAccent,
-      child: Column(
-        children: [
-          _buildSimpleListItem('Informatika va axborot texnologiyalari kafedrasi', 'Mamasarulov Sharof'),
-          const SizedBox(height: 8),
-          _buildSimpleListItem('Aniqlik va tabiiy fanlar kafedrasi', 'Matematika, Fizika'),
-          const SizedBox(height: 8),
-          _buildSimpleListItem('Tillar va ijtimoiy fanlar kafedrasi', 'O\'zbek tili, Rus tili, Ingliz tili'),
-        ],
-      ),
-    );
-  }
-
-  // 9. FANLAR VA MAVZULAR DIALOG
-  void _showSubjectDialog(BuildContext context) {
-    _showAdminModal(
-      context: context,
-      title: 'O\'QUV FANLARI KATALOGI',
-      icon: Icons.menu_book_outlined,
-      accentColor: AppColors.goldPrimary,
-      child: Column(
-        children: [
-          _buildSimpleListItem('Informatika va AT', '25 ta mavzuli diagnostika testi'),
-          const SizedBox(height: 8),
-          _buildSimpleListItem('Matematika (Algebra/Geometriya)', '30 ta mavzuli test'),
-          const SizedBox(height: 8),
-          _buildSimpleListItem('Fizika', '20 ta diagnostika testi'),
         ],
       ),
     );

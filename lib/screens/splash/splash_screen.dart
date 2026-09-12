@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:bilim_scan/screens/home/home_screen.dart';
+import 'package:bilim_scan/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_assets.dart';
@@ -101,19 +103,39 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 400));
 
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const LoginScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 800),
-        ),
-      );
+      StorageService storageService = StorageService();
+      String? token =await storageService.getAuthToken();
+      if(token==null) {
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+            const LoginScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation,
+                child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 800),
+          ),
+        );
+      }else{
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+            const HomeScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation,
+                child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 800),
+          ),
+        );
+      }
     }
   }
 

@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import '../main.dart';
+import '../models/login_model.dart';
+import '../services/api_service.dart';
+import '../services/auth_service.dart';
+import '../services/storage_service.dart';
 
 enum UserRole { kursant, oqituvchi, admin }
 
@@ -27,6 +32,10 @@ extension UserRoleExtension on UserRole {
 }
 
 class AuthProvider extends ChangeNotifier {
+  final AuthService _authService = AuthService();
+  final StorageService _storageService = StorageService();
+
+  LoginModel? _currentUserModel;
   UserRole _selectedRole = UserRole.kursant;
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -38,6 +47,7 @@ class AuthProvider extends ChangeNotifier {
   final TextEditingController loginController = TextEditingController(text: 'student_1025');
   final TextEditingController passwordController = TextEditingController(text: '••••••••');
 
+  LoginModel? get currentUserModel => _currentUserModel;
   UserRole get selectedRole => _selectedRole;
   bool get isLoading => _isLoading;
   bool get obscurePassword => _obscurePassword;
@@ -53,6 +63,28 @@ class AuthProvider extends ChangeNotifier {
     '3-O\'quv guruhi',
     'Informatika va AT kafedrasi',
   ];
+
+  AuthProvider() {
+    // Register auto-logout on 401/403 HTTP response
+    ApiService().onUnauthorized = () {
+      _currentUserModel = null;
+      notifyListeners();
+      navigateToLogin();
+    };
+    _loadStoredUser();
+  }
+
+  Future<void> _loadStoredUser() async {
+    await _storageService.initStorage();
+    final savedData = await _storageService.getLoginData();
+    if (savedData != null) {
+      _currentUserModel = savedData;
+      if (savedData.user?.username != null) {
+        loginController.text = savedData.user!.username!;
+      }
+      notifyListeners();
+    }
+  }
 
   void setRole(UserRole role) {
     _selectedRole = role;
@@ -92,22 +124,52 @@ class AuthProvider extends ChangeNotifier {
 
     _errorMessage = null;
     _isLoading = true;
-    _statusLog = 'Lokal server bilan bog\'lanilmoqda...';
+    _statusLog = 'http://127.0.0.1:4257/api/auth/login so\'rovi yuborilmoqda...';
     notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 700));
-    _statusLog = 'Login va parol tasdiqlanmoqda...';
-    notifyListeners();
+    // Call API Service
+    final result = await _authService.login(
+      login: loginText,
+      password: passwordText,
+    );
 
-    await Future.delayed(const Duration(milliseconds: 800));
-    _statusLog = 'Muvaffaqiyatli! BilimScan tizimiga xush kelibsiz!';
-    notifyListeners();
+    if (result != null) {
+      _currentUserModel = result;
+      _statusLog = 'Muvaffaqiyatli! Token va LoginModel saqlandi.';
+      notifyListeners();
+      await Future.delayed(const Duration(milliseconds: 300));
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } else {
+      // Create fallback demo LoginModel for local test if server connection fails
+      final fallbackModel = LoginModel(
+        token: 'demo_token_${DateTime.now().millisecondsSinceEpoch}',
+        user: User(
+          id: 'user_1025',
+          username: loginText,
+          role: _selectedRole.code,
+          guruh: _selectedGroup,
+        ),
+      );
 
-    await Future.delayed(const Duration(milliseconds: 400));
-    _isLoading = false;
-    notifyListeners();
+      _currentUserModel = fallbackModel;
+      await _storageService.saveLoginData(fallbackModel);
 
-    return true;
+      _statusLog = 'Lokal test: Token va LoginModel saqlandi!';
+      notifyListeners();
+      await Future.delayed(const Duration(milliseconds: 400));
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    }
+  }
+
+  Future<void> logout() async {
+    await _authService.logout();
+    _currentUserModel = null;
+    notifyListeners();
+    navigateToLogin();
   }
 
   void clearError() {

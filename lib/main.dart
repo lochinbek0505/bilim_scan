@@ -5,7 +5,24 @@ import 'providers/auth_provider.dart';
 import 'providers/test_provider.dart';
 import 'providers/edu_plan_provider.dart';
 import 'providers/exam_provider.dart';
+import 'providers/catalog_provider.dart';
 import 'screens/splash/splash_screen.dart';
+import 'screens/login/login_screen.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+void navigateToLogin() {
+  navigatorKey.currentState?.pushAndRemoveUntil(
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      transitionDuration: const Duration(milliseconds: 600),
+    ),
+    (route) => false,
+  );
+}
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,8 +40,10 @@ class BilimScanApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TestProvider()),
         ChangeNotifierProvider(create: (_) => EduPlanProvider()),
         ChangeNotifierProvider(create: (_) => ExamProvider()),
+        ChangeNotifierProvider(create: (_) => CatalogProvider()),
       ],
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         title: 'IIV Akademik Litseyi - Bilim Scan',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
