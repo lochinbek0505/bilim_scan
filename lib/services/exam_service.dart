@@ -15,33 +15,46 @@ class ExamService {
         final List<dynamic> list = response.data as List<dynamic>;
         return list.map((e) => ExamModel.fromJson(e as Map<String, dynamic>)).toList();
       }
-      return [];
     } on DioException catch (e) {
       if (kDebugMode) {
         debugPrint('❌ [EXAM SERVICE GET ERR]: ${e.message}');
       }
-      return [];
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [EXAM SERVICE GET UNKNOWN ERR]: $e');
+      }
     }
+    return [];
   }
 
-  /// POST /api/exams (Token bilan)
-  /// Sends payload: {"testId": "...", "guruhId": "...", "durationMinutes": 20, "questionCount": 5, "maxAttempts": 20}
+  /// POST /api/exams/create (Token bilan)
+  /// Sends payload:
+  /// {
+  ///    "testId": "6aa2dc8219ef3807c41081be",
+  ///    "guruhId": "6aa0f1e7e21b3be71d3be9d3",
+  ///    "durationMinutes": 20,
+  ///    "questionCount": 5,
+  ///    "maxAttempts": 20
+  /// }
   Future<ExamModel?> createExam(ExamModel exam) async {
     try {
       final response = await _apiService.dio.post(
-        ApiConfig.exams,
-        data: exam.toApiRequestJson(),
+        ApiConfig.examCreate,
+        data: exam.toCreateRequestJson(),
       );
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if ((response.statusCode == 200 || response.statusCode == 201) && response.data != null) {
         return ExamModel.fromJson(response.data as Map<String, dynamic>);
       }
-      return null;
     } on DioException catch (e) {
       if (kDebugMode) {
         debugPrint('❌ [EXAM SERVICE CREATE ERR]: ${e.message}');
       }
-      return null;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [EXAM SERVICE CREATE UNKNOWN ERR]: $e');
+      }
     }
+    return null;
   }
 
   /// PUT /api/exams/{id} (Token bilan)
@@ -49,15 +62,19 @@ class ExamService {
     try {
       final response = await _apiService.dio.put(
         '${ApiConfig.exams}/${exam.id}',
-        data: exam.toApiRequestJson(),
+        data: exam.toCreateRequestJson(),
       );
       return response.statusCode == 200;
     } on DioException catch (e) {
       if (kDebugMode) {
         debugPrint('❌ [EXAM SERVICE UPDATE ERR]: ${e.message}');
       }
-      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [EXAM SERVICE UPDATE UNKNOWN ERR]: $e');
+      }
     }
+    return false;
   }
 
   /// DELETE /api/exams/{id} (Token bilan)
@@ -69,7 +86,11 @@ class ExamService {
       if (kDebugMode) {
         debugPrint('❌ [EXAM SERVICE DELETE ERR]: ${e.message}');
       }
-      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [EXAM SERVICE DELETE UNKNOWN ERR]: $e');
+      }
     }
+    return false;
   }
 }

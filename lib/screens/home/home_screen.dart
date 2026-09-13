@@ -9,6 +9,7 @@ import '../test_management/test_management_screen.dart';
 import '../edu_plan_management/edu_plan_management_screen.dart';
 import '../exam_management/exam_management_screen.dart';
 import '../catalog_management/catalog_management_screen.dart';
+import '../user_management/user_management_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -197,12 +198,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       // 4. User Yaratish
                       _buildAdminModuleCard(
-                        title: '4. USER YARATISH',
+                        title: '4. USERLARNI BOSHQARISH (CRUD)',
                         subtitle: 'O\'quvchilar, o\'qituvchilar va administratorlar hisoblarini boshqarish',
                         badgeText: 'Foydalanuvchilar',
                         icon: Icons.person_add_alt_1_outlined,
                         accentColor: AppColors.warning,
-                        onTap: () => _showCreateUserDialog(context),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => const UserManagementScreen()),
+                          );
+                        },
                       ),
 
                       // 5. O'quv Reja
@@ -594,32 +599,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 4. USER YARATISH DIALOG
-  void _showCreateUserDialog(BuildContext context) {
-    _showAdminModal(
-      context: context,
-      title: 'YANGI FOYDALANUVCHI (USER) YARATISH',
-      icon: Icons.person_add_alt_1_outlined,
-      accentColor: AppColors.warning,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildModalTextField(label: 'F.I.SH. (TO\'LIQ ISM)', hint: 'Masalan: Narzullaev Daler Baxrullaevich'),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _buildModalTextField(label: 'LOGIN', hint: 'student_1025')),
-              const SizedBox(width: 12),
-              Expanded(child: _buildModalTextField(label: 'PAROL', hint: '••••••••')),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildModalTextField(label: 'ROLI', hint: 'O\'quvchi / O\'qituvchi / Admin'),
-        ],
-      ),
-    );
-  }
-
   // 10. TAHLIL DIALOG
   void _showAnalysisDialog(BuildContext context) {
     _showAdminModal(
@@ -712,34 +691,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildModalTextField({required String label, required String hint}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.textSecondary)),
-        const SizedBox(height: 4),
-        TextField(
-          style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 12),
-            filled: true,
-            fillColor: AppColors.inputBackground,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.cardBorder),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.goldPrimary),
-            ),
-          ),
-        ),
-      ],
     );
   }
 

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
@@ -374,7 +377,7 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
     );
   }
 
-  // CREATE / EDIT TEST DIALOG
+  // CREATE / EDIT TEST DIALOG WITH NATIVE FILE PICKER FOR JSON
   void _showTestFormDialog(BuildContext context, TestModel? testToEdit) {
     final testProvider = Provider.of<TestProvider>(context, listen: false);
 
@@ -590,7 +593,7 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                     const Divider(color: AppColors.cardBorder),
                     const SizedBox(height: 10),
 
-                    // JSON Questions Import Section
+                    // JSON Questions Import Section with Native File Picker
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -599,12 +602,64 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                       ],
                     ),
                     const SizedBox(height: 6),
+
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.folder_open_outlined, size: 16),
+                      label: const Text('KOMPYUTERDAN JSON FAYLNI TANLASH (.json)'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.goldPrimary,
+                        foregroundColor: AppColors.backgroundDark,
+                      ),
+                      onPressed: () async {
+                        try {
+                          final PlatformFile? file = await FilePicker.pickFile(
+                            type: FileType.custom,
+                            allowedExtensions: ['json'],
+                          );
+
+                          if (file != null) {
+                            String jsonContent = '';
+
+                            if (file.path != null && file.path!.isNotEmpty) {
+                              jsonContent = await File(file.path!).readAsString();
+                            } else {
+                              final bytes = await file.readAsBytes();
+                              jsonContent = utf8.decode(bytes);
+                            }
+
+                            if (jsonContent.isNotEmpty) {
+                              jsonImportController.text = jsonContent;
+                              final parsed = testProvider.parseQuestionsFromJson(jsonContent);
+                              if (parsed.isNotEmpty) {
+                                setModalState(() {
+                                  currentQuestions = parsed;
+                                });
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('✔ ${parsed.length} ta savol fayldan muvaffaqiyatli o\'qindi!'), backgroundColor: AppColors.emeraldAccent),
+                                  );
+                                }
+                              }
+                            }
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Faylni o\'qishda xatolik: $e'), backgroundColor: AppColors.error),
+                            );
+                          }
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 8),
+
                     TextField(
                       controller: jsonImportController,
                       maxLines: 4,
                       style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textPrimary, fontFamily: 'monospace'),
                       decoration: InputDecoration(
-                        hintText: 'Savollar JSON fayli kontentini bu yerga joylashtiring...',
+                        hintText: 'Yoki JSON matnini bu yerga nusxalab joylashtiring...',
                         hintStyle: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted),
                         filled: true,
                         fillColor: AppColors.inputBackground,
@@ -615,7 +670,7 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
 
                     ElevatedButton.icon(
                       icon: const Icon(Icons.file_upload_outlined, size: 16),
-                      label: const Text('FAYL / JSON NI PARSE QILISH'),
+                      label: const Text('MATNNI PARSE QILISH'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.emeraldPrimary,
                         foregroundColor: Colors.white,
@@ -628,13 +683,17 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                             setModalState(() {
                               currentQuestions = parsed;
                             });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('${parsed.length} ta savol muvaffaqiyatli parse qilindi!'), backgroundColor: AppColors.emeraldAccent),
-                            );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('${parsed.length} ta savol muvaffaqiyatli parse qilindi!'), backgroundColor: AppColors.emeraldAccent),
+                              );
+                            }
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('JSON formati noto\'g\'ri! Coder JSON formatini tekshiring.'), backgroundColor: AppColors.error),
-                            );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('JSON formati noto\'g\'ri! Coder JSON formatini tekshiring.'), backgroundColor: AppColors.error),
+                              );
+                            }
                           }
                         }
                       },

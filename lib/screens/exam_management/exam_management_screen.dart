@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../models/exam_model.dart';
+import '../../providers/catalog_provider.dart';
 import '../../providers/exam_provider.dart';
 import '../../providers/test_provider.dart';
 
@@ -119,16 +120,23 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
 
   Widget _buildMetricChip(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.cardDark,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -141,13 +149,13 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
     );
   }
 
-  // Filter Panel
+  // MULTI-CRITERIA FILTER PANEL
   Widget _buildFilterPanel(ExamProvider provider) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardDark,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -158,14 +166,14 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.filter_list, color: AppColors.goldPrimary, size: 18),
+                  const Icon(Icons.filter_alt_outlined, color: AppColors.goldPrimary, size: 18),
                   const SizedBox(width: 8),
-                  Text('FILTRLASH', style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.goldPrimary)),
+                  Text('IMTIHONLARNI SARALASH VA QIDIRISH', style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.goldPrimary)),
                 ],
               ),
               if (provider.hasActiveFilters)
                 TextButton.icon(
-                  icon: const Icon(Icons.clear_all, size: 14, color: AppColors.error),
+                  icon: const Icon(Icons.clear_all, size: 16, color: AppColors.error),
                   label: Text('TOZALASH', style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.bold)),
                   onPressed: () {
                     _searchController.clear();
@@ -174,40 +182,38 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           Row(
             children: [
               Expanded(
-                flex: 2,
                 child: TextField(
                   controller: _searchController,
                   onChanged: (val) => provider.setSearchQuery(val),
-                  style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary, fontSize: 13),
+                  style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
                   decoration: InputDecoration(
-                    hintText: 'Imtihon nomi bo\'yicha qidirish...',
-                    hintStyle: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 12),
-                    prefixIcon: const Icon(Icons.search, color: AppColors.goldPrimary, size: 18),
+                    hintText: 'Imtihon nomi yoki guruh bo\'yicha qidirish...',
+                    hintStyle: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 13),
+                    prefixIcon: const Icon(Icons.search, color: AppColors.goldPrimary, size: 20),
                     filled: true,
                     fillColor: AppColors.inputBackground,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.cardBorder)),
                     focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.goldPrimary)),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
 
-              // Guruh Dropdown Filter
               _buildFilterDropdown(
                 hint: 'Guruh: Barchasi',
                 value: provider.selectedGuruhFilter,
                 items: provider.guruhlarMap.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)))).toList(),
                 onChanged: (val) => provider.setGuruhFilter(val),
               ),
-              const SizedBox(width: 10),
 
-              // Status Dropdown Filter
+              const SizedBox(width: 12),
+
               _buildFilterDropdown(
                 hint: 'Status: Barchasi',
                 value: provider.selectedStatusFilter,
@@ -254,9 +260,9 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.quiz_outlined, size: 54, color: AppColors.textMuted.withValues(alpha: 0.5)),
+          Icon(Icons.notes_outlined, size: 54, color: AppColors.textMuted.withValues(alpha: 0.5)),
           const SizedBox(height: 12),
-          Text('Hech qanday imtihon topilmadi', style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textMuted)),
+          Text('Imtihon seanslari topilmadi', style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textMuted)),
           const SizedBox(height: 4),
           Text('Yangi imtihon yaratish uchun "+ YANGI IMTIHON YARATISH" tugmasini bosing', style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textMuted)),
         ],
@@ -265,8 +271,8 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
   }
 
   Widget _buildExamCard(BuildContext context, ExamModel exam, ExamProvider provider) {
-    final testName = provider.testsMap[exam.testId] ?? exam.testId;
-    final guruhName = provider.guruhlarMap[exam.guruhId] ?? exam.guruhId;
+    final guruhName = exam.guruh?.name ?? provider.guruhlarMap[exam.guruhId] ?? exam.guruhId;
+    final bosqichName = exam.guruh?.bosqich?.name;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -276,7 +282,7 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
         border: Border.all(color: AppColors.cardBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: Colors.black.withValues(alpha: 0.25),
             blurRadius: 10,
           ),
         ],
@@ -301,9 +307,12 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(exam.name, style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textPrimary)),
+                      Text(exam.name ?? 'Imtihon', style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textPrimary)),
                       const SizedBox(height: 2),
-                      Text('Test: $testName • Guruh: $guruhName', style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textMuted)),
+                      Text(
+                        'Guruh: $guruhName ${bosqichName != null ? "($bosqichName)" : ""} • TestID: ${exam.testId}',
+                        style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textMuted),
+                      ),
                     ],
                   ),
                 ],
@@ -342,7 +351,7 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                   _buildBadge(Icons.timer_outlined, 'Vaqt: ${exam.durationMinutes} min', AppColors.goldPrimary),
                   _buildBadge(Icons.help_outline, 'Savollar: ${exam.questionCount} ta', AppColors.emeraldAccent),
                   _buildBadge(Icons.loop, 'Urinishlar: ${exam.maxAttempts} ta', const Color(0xFF0EA5E9)),
-                  _buildBadge(Icons.vpn_key_outlined, 'TestID: ${exam.testId.substring(0, 8)}...', AppColors.info),
+                  _buildBadge(Icons.play_arrow_outlined, 'Status: ${exam.active ? "FAOL" : "NOFAOL"}', AppColors.info),
                 ],
               ),
 
@@ -397,9 +406,10 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
     );
   }
 
-  // CREATE / EDIT EXAM FORM DIALOG
+  // CREATE / EDIT EXAM FORM DIALOG (INTEGRATED WITH /api/exams/create)
   void _showExamFormDialog(BuildContext context, ExamModel? examToEdit) {
     final examProvider = Provider.of<ExamProvider>(context, listen: false);
+    final catalogProvider = Provider.of<CatalogProvider>(context, listen: false);
     final testProvider = Provider.of<TestProvider>(context, listen: false);
 
     final nameController = TextEditingController(text: examToEdit?.name ?? 'Matematika fanidan 1-oraliq nazorat imtihoni');
@@ -407,15 +417,19 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
     final questionCountController = TextEditingController(text: (examToEdit?.questionCount ?? 5).toString());
     final maxAttemptsController = TextEditingController(text: (examToEdit?.maxAttempts ?? 20).toString());
 
-    String selectedTestId = examToEdit?.testId ?? examProvider.testsMap.keys.first;
-    String selectedGuruhId = examToEdit?.guruhId ?? examProvider.guruhlarMap.keys.first;
-    String selectedStatus = examToEdit?.status ?? 'FAOL';
+    // Selected Test and Guruh IDs
+    String selectedTestId = examToEdit?.testId ??
+        (testProvider.tests.isNotEmpty ? testProvider.tests.first.id : '6aa2dc8219ef3807c41081be');
+
+    String selectedGuruhId = examToEdit?.guruhId ??
+        (catalogProvider.guruhlar.isNotEmpty ? catalogProvider.guruhlar.first.id! : '6aa0f1e7e21b3be71d3be9d3');
 
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setModalState) {
           final currentApiJson = {
+            if (nameController.text.trim().isNotEmpty) "name": nameController.text.trim(),
             "testId": selectedTestId,
             "guruhId": selectedGuruhId,
             "durationMinutes": int.tryParse(durationController.text) ?? 20,
@@ -437,22 +451,23 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  examToEdit == null ? 'YANGI IMTIHON YARATISH' : 'IMTIHONNI TAHRIRLASH',
+                  examToEdit == null ? 'YANGI IMTIHON YARATISH (/api/exams/create)' : 'IMTIHONNI TAHRIRLASH',
                   style: AppTextStyles.titleHeader.copyWith(fontSize: 16),
                 ),
               ],
             ),
             content: SizedBox(
-              width: 560,
+              width: 580,
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildFormLabel('IMTIHON NOMI'),
+                    _buildFormLabel('IMTIHON NOMI (NAME)'),
                     const SizedBox(height: 4),
                     TextField(
                       controller: nameController,
+                      onChanged: (_) => setModalState(() {}),
                       style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
                       decoration: _inputDecoration('Masalan: Matematika fanidan 1-oraliq nazorat'),
                     ),
@@ -460,6 +475,7 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
 
                     Row(
                       children: [
+                        // TEST SELECTOR
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -469,12 +485,16 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
-                                    value: examProvider.testsMap.containsKey(selectedTestId) ? selectedTestId : examProvider.testsMap.keys.first,
+                                    value: selectedTestId,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: examProvider.testsMap.entries.map((e) {
-                                      return DropdownMenuItem(value: e.key, child: Text(e.value, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)));
-                                    }).toList(),
+                                    items: testProvider.tests.map((t) {
+                                      return DropdownMenuItem<String>(value: t.id, child: Text(t.name, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)));
+                                    }).toList()..addAll(
+                                      examProvider.testsMap.entries.where((e) => !testProvider.tests.any((t) => t.id == e.key)).map((e) {
+                                        return DropdownMenuItem<String>(value: e.key, child: Text(e.value, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)));
+                                      })
+                                    ),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedTestId = val);
                                     },
@@ -485,6 +505,8 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
+
+                        // GURUH SELECTOR
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,12 +516,16 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
-                                    value: examProvider.guruhlarMap.containsKey(selectedGuruhId) ? selectedGuruhId : examProvider.guruhlarMap.keys.first,
+                                    value: selectedGuruhId,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: examProvider.guruhlarMap.entries.map((e) {
-                                      return DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
-                                    }).toList(),
+                                    items: catalogProvider.guruhlar.map((g) {
+                                      return DropdownMenuItem<String>(value: g.id!, child: Text('${g.name ?? "Guruh"} (${g.bosqich?.name ?? ""})', style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)));
+                                    }).toList()..addAll(
+                                      examProvider.guruhlarMap.entries.where((e) => !catalogProvider.guruhlar.any((g) => g.id == e.key)).map((e) {
+                                        return DropdownMenuItem<String>(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)));
+                                      })
+                                    ),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedGuruhId = val);
                                     },
@@ -574,7 +600,7 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                     const SizedBox(height: 10),
 
                     // GENERATED API JSON PREVIEW
-                    _buildFormLabel('GENERATSIYA QILINGAN JSON SO\'ROVI (API PAYLOAD):'),
+                    _buildFormLabel('API SO\'ROV PAYLOADI (POST /api/exams/create):'),
                     const SizedBox(height: 6),
                     Container(
                       width: double.infinity,
@@ -600,32 +626,30 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.goldPrimary, foregroundColor: AppColors.backgroundDark),
-                onPressed: () {
+                onPressed: () async {
                   final name = nameController.text.trim();
                   final duration = int.tryParse(durationController.text.trim()) ?? 20;
                   final count = int.tryParse(questionCountController.text.trim()) ?? 5;
                   final attempts = int.tryParse(maxAttemptsController.text.trim()) ?? 20;
 
-                  if (name.isEmpty) return;
-
                   final newExam = ExamModel(
-                    id: examToEdit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                    name: name,
+                    id: examToEdit?.id ?? '',
+                    name: name.isEmpty ? 'Imtihon' : name,
                     testId: selectedTestId,
                     guruhId: selectedGuruhId,
                     durationMinutes: duration,
                     questionCount: count,
                     maxAttempts: attempts,
-                    status: selectedStatus,
+                    status: 'FAOL',
                   );
 
                   if (examToEdit == null) {
-                    examProvider.addExam(newExam);
+                    await examProvider.createExam(newExam);
                   } else {
-                    examProvider.updateExam(newExam);
+                    await examProvider.updateExam(newExam);
                   }
 
-                  Navigator.of(dialogContext).pop();
+                  if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                 },
                 child: Text(examToEdit == null ? 'YARATISH' : 'SAQLASH'),
               ),
@@ -638,7 +662,7 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
 
   // JSON PAYLOAD MODAL
   void _showJsonPayloadModal(BuildContext context, ExamModel exam) {
-    final jsonStr = const JsonEncoder.withIndent('  ').convert(exam.toApiRequestJson());
+    final jsonStr = const JsonEncoder.withIndent('  ').convert(exam.toCreateRequestJson());
 
     showDialog(
       context: context,
@@ -649,31 +673,22 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
           children: [
             const Icon(Icons.code_outlined, color: AppColors.goldPrimary),
             const SizedBox(width: 10),
-            Expanded(child: Text('${exam.name} — API JSON SO\'ROVI', style: AppTextStyles.titleHeader.copyWith(fontSize: 15))),
+            Text('${exam.name} — POST API Payload', style: AppTextStyles.titleHeader.copyWith(fontSize: 15)),
           ],
         ),
         content: SizedBox(
-          width: 480,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Serverga yuboriladigan aniq JSON ob\'ekti:', style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 12)),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.inputBackground,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.goldPrimary),
-                ),
-                child: SelectableText(
-                  jsonStr,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 13, color: AppColors.goldPrimary),
-                ),
-              ),
-            ],
+          width: 440,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.inputBackground,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.goldPrimary.withValues(alpha: 0.5)),
+            ),
+            child: Text(
+              jsonStr,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: AppColors.goldPrimary),
+            ),
           ),
         ),
         actions: [
@@ -687,20 +702,21 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
     );
   }
 
+  // CONFIRM DELETE DIALOG (DELETE /api/exams/{id})
   void _confirmDeleteDialog(BuildContext context, String id, ExamProvider provider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardDark,
         title: Text('IMTIHONNI O\'CHIRISH', style: AppTextStyles.titleHeader.copyWith(color: AppColors.error)),
-        content: Text('Haqiqatan ham ushbu imtihon seansini o\'chirib tashlamoqchimisiz?', style: AppTextStyles.bodyText),
+        content: Text('Haqiqatan ham ushbu imtihon seansini o\'chirib tashlamoqchimisiz? (DELETE /api/exams/$id)', style: AppTextStyles.bodyText),
         actions: [
           TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('BEKOR QILISH')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () {
-              provider.deleteExam(id);
-              Navigator.of(context).pop();
+            onPressed: () async {
+              await provider.deleteExam(id);
+              if (context.mounted) Navigator.of(context).pop();
             },
             child: const Text('O\'CHIRISH'),
           ),

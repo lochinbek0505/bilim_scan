@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/tactical_background.dart';
@@ -11,13 +12,11 @@ import '../../providers/catalog_provider.dart';
 class CatalogManagementScreen extends StatefulWidget {
   final int initialTabIndex;
 
-  const CatalogManagementScreen({
-    super.key,
-    this.initialTabIndex = 0,
-  });
+  const CatalogManagementScreen({super.key, this.initialTabIndex = 0});
 
   @override
-  State<CatalogManagementScreen> createState() => _CatalogManagementScreenState();
+  State<CatalogManagementScreen> createState() =>
+      _CatalogManagementScreenState();
 }
 
 class _CatalogManagementScreenState extends State<CatalogManagementScreen>
@@ -50,7 +49,9 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: AppColors.backgroundSecondary.withValues(alpha: 0.95),
+          backgroundColor: AppColors.backgroundSecondary.withValues(
+            alpha: 0.95,
+          ),
           elevation: 4,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.goldPrimary),
@@ -61,11 +62,17 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
             children: [
               Text(
                 'KATALOGLAR BOSHQARUVI (CRUD)',
-                style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textPrimary),
+                style: AppTextStyles.titleHeader.copyWith(
+                  fontSize: 16,
+                  color: AppColors.textPrimary,
+                ),
               ),
               Text(
                 'Bosqichlar, fanlar, guruhlar hamda kafedralar ma\'lumotnomalari',
-                style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted),
+                style: AppTextStyles.bodyText.copyWith(
+                  fontSize: 11,
+                  color: AppColors.textMuted,
+                ),
               ),
             ],
           ),
@@ -76,10 +83,22 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
             unselectedLabelColor: AppColors.textMuted,
             labelStyle: AppTextStyles.badgeText.copyWith(fontSize: 12),
             tabs: const [
-              Tab(icon: Icon(Icons.stairs_outlined, size: 18), text: 'KURS BOSQICHI'),
-              Tab(icon: Icon(Icons.menu_book_outlined, size: 18), text: 'FANLAR'),
-              Tab(icon: Icon(Icons.groups_3_outlined, size: 18), text: 'GURUHLAR'),
-              Tab(icon: Icon(Icons.account_balance_outlined, size: 18), text: 'KAFEDRALAR'),
+              Tab(
+                icon: Icon(Icons.stairs_outlined, size: 18),
+                text: 'KURS BOSQICHI',
+              ),
+              Tab(
+                icon: Icon(Icons.menu_book_outlined, size: 18),
+                text: 'FANLAR',
+              ),
+              Tab(
+                icon: Icon(Icons.groups_3_outlined, size: 18),
+                text: 'GURUHLAR',
+              ),
+              Tab(
+                icon: Icon(Icons.account_balance_outlined, size: 18),
+                text: 'KAFEDRALAR',
+              ),
             ],
           ),
         ),
@@ -101,35 +120,62 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
                       child: TextField(
                         controller: _searchController,
                         onChanged: (val) => catalogProvider.setSearchQuery(val),
-                        style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
+                        style: AppTextStyles.bodyText.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Nomi bo\'yicha qidirish...',
-                          hintStyle: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 13),
-                          prefixIcon: const Icon(Icons.search, color: AppColors.goldPrimary, size: 20),
+                          hintStyle: AppTextStyles.bodyText.copyWith(
+                            color: AppColors.textMuted,
+                            fontSize: 13,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: AppColors.goldPrimary,
+                            size: 20,
+                          ),
                           filled: true,
                           fillColor: AppColors.inputBackground,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: AppColors.cardBorder),
+                            borderSide: const BorderSide(
+                              color: AppColors.cardBorder,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: AppColors.goldPrimary),
+                            borderSide: const BorderSide(
+                              color: AppColors.goldPrimary,
+                            ),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 16),
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.add, size: 18, color: AppColors.backgroundDark),
-                      label: Text('YANGI QO\'SHISH', style: AppTextStyles.buttonText.copyWith(fontSize: 12)),
+                      icon: const Icon(
+                        Icons.add,
+                        size: 18,
+                        color: AppColors.backgroundDark,
+                      ),
+                      label: Text(
+                        'YANGI QO\'SHISH',
+                        style: AppTextStyles.buttonText.copyWith(fontSize: 12),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.goldPrimary,
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
                       ),
                       onPressed: () {
-                        final currentType = CatalogType.values[_tabController.index];
+                        final currentType =
+                            CatalogType.values[_tabController.index];
                         _showCreateOrEditDialog(context, currentType, null);
                       },
                     ),
@@ -144,10 +190,28 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildCatalogResponseList(context, catalogProvider.bosqichlar, CatalogType.bosqich, catalogProvider),
-                    _buildFanList(context, catalogProvider.fanlar, catalogProvider),
-                    _buildGuruhList(context, catalogProvider.guruhlar, catalogProvider),
-                    _buildCatalogResponseList(context, catalogProvider.kafedralar, CatalogType.kafedra, catalogProvider),
+                    _buildCatalogResponseList(
+                      context,
+                      catalogProvider.bosqichlar,
+                      CatalogType.bosqich,
+                      catalogProvider,
+                    ),
+                    _buildFanList(
+                      context,
+                      catalogProvider.fanlar,
+                      catalogProvider,
+                    ),
+                    _buildGuruhList(
+                      context,
+                      catalogProvider.guruhlar,
+                      catalogProvider,
+                    ),
+                    _buildCatalogResponseList(
+                      context,
+                      catalogProvider.kafedralar,
+                      CatalogType.kafedra,
+                      catalogProvider,
+                    ),
                   ],
                 ),
               ),
@@ -179,7 +243,8 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
           subtitle: 'ID: ${item.id ?? '---'}',
           icon: _getIconForType(type),
           onEdit: () => _showCreateOrEditDialog(context, type, item),
-          onDelete: () => _confirmDeleteDialog(context, type, item.id ?? '', provider),
+          onDelete: () =>
+              _confirmDeleteDialog(context, type, item.id ?? '', provider),
         );
       },
     );
@@ -202,10 +267,16 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
         final item = items[index];
         return _buildCardItem(
           title: item.name ?? 'Nomsiz',
-          subtitle: 'Kafedra: ${item.kafedra?.name ?? 'Biriktirilmagan'} • ID: ${item.id ?? '---'}',
+          subtitle:
+              'Kafedra: ${item.kafedra?.name ?? 'Biriktirilmagan'} • ID: ${item.id ?? '---'}',
           icon: Icons.menu_book_outlined,
           onEdit: () => _showCreateOrEditDialog(context, CatalogType.fan, item),
-          onDelete: () => _confirmDeleteDialog(context, CatalogType.fan, item.id ?? '', provider),
+          onDelete: () => _confirmDeleteDialog(
+            context,
+            CatalogType.fan,
+            item.id ?? '',
+            provider,
+          ),
         );
       },
     );
@@ -228,10 +299,17 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
         final item = items[index];
         return _buildCardItem(
           title: item.name ?? 'Nomsiz',
-          subtitle: 'Bosqich: ${item.bosqich?.name ?? 'Biriktirilmagan'} • ID: ${item.id ?? '---'}',
+          subtitle:
+              'Bosqich: ${item.bosqich?.name ?? 'Biriktirilmagan'} • ID: ${item.id ?? '---'}',
           icon: Icons.groups_3_outlined,
-          onEdit: () => _showCreateOrEditDialog(context, CatalogType.guruh, item),
-          onDelete: () => _confirmDeleteDialog(context, CatalogType.guruh, item.id ?? '', provider),
+          onEdit: () =>
+              _showCreateOrEditDialog(context, CatalogType.guruh, item),
+          onDelete: () => _confirmDeleteDialog(
+            context,
+            CatalogType.guruh,
+            item.id ?? '',
+            provider,
+          ),
         );
       },
     );
@@ -242,11 +320,27 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inventory_2_outlined, size: 54, color: AppColors.textMuted.withValues(alpha: 0.5)),
+          Icon(
+            Icons.inventory_2_outlined,
+            size: 54,
+            color: AppColors.textMuted.withValues(alpha: 0.5),
+          ),
           const SizedBox(height: 12),
-          Text('$title bo\'yicha ma\'lumot topilmadi', style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textMuted)),
+          Text(
+            '$title bo\'yicha ma\'lumot topilmadi',
+            style: AppTextStyles.titleHeader.copyWith(
+              fontSize: 16,
+              color: AppColors.textMuted,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text('Yangi element qo\'shish uchun "+ YANGI QO\'SHISH" tugmasini bosing', style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textMuted)),
+          Text(
+            'Yangi element qo\'shish uchun "+ YANGI QO\'SHISH" tugmasini bosing',
+            style: AppTextStyles.bodyText.copyWith(
+              fontSize: 12,
+              color: AppColors.textMuted,
+            ),
+          ),
         ],
       ),
     );
@@ -266,10 +360,7 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.cardBorder),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8),
         ],
       ),
       child: Row(
@@ -289,9 +380,21 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: AppTextStyles.titleHeader.copyWith(fontSize: 15, color: AppColors.textPrimary)),
+                  Text(
+                    title,
+                    style: AppTextStyles.titleHeader.copyWith(
+                      fontSize: 15,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted)),
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.bodyText.copyWith(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -299,12 +402,20 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.edit_outlined, color: AppColors.goldPrimary, size: 20),
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.goldPrimary,
+                  size: 20,
+                ),
                 tooltip: 'Tahrirlash',
                 onPressed: onEdit,
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.error,
+                  size: 20,
+                ),
                 tooltip: 'O\'chirish',
                 onPressed: onDelete,
               ),
@@ -374,10 +485,17 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
             ),
             title: Row(
               children: [
-                Icon(itemToEdit == null ? Icons.add_circle_outline : Icons.edit_note, color: AppColors.goldPrimary),
+                Icon(
+                  itemToEdit == null
+                      ? Icons.add_circle_outline
+                      : Icons.edit_note,
+                  color: AppColors.goldPrimary,
+                ),
                 const SizedBox(width: 10),
                 Text(
-                  itemToEdit == null ? '${type.title}: YANGI QO\'SHISH' : '${type.title}: TAHRIRLASH',
+                  itemToEdit == null
+                      ? '${type.title}: YANGI QO\'SHISH'
+                      : '${type.title}: TAHRIRLASH',
                   style: AppTextStyles.titleHeader.copyWith(fontSize: 15),
                 ),
               ],
@@ -388,26 +506,56 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('ELEMENT NOMI (NAME)', style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.textSecondary)),
+                  Text(
+                    'ELEMENT NOMI (NAME)',
+                    style: AppTextStyles.badgeText.copyWith(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   TextField(
                     controller: nameController,
-                    style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
+                    style: AppTextStyles.bodyText.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Nomi (masalan: 10-25-guruh / Informatika)',
-                      hintStyle: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textMuted),
+                      hintStyle: AppTextStyles.bodyText.copyWith(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
                       filled: true,
                       fillColor: AppColors.inputBackground,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.cardBorder)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.goldPrimary)),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: AppColors.cardBorder,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: AppColors.goldPrimary,
+                        ),
+                      ),
                     ),
                   ),
 
                   // DROPDOWN FOR GURUH -> BOSQICH TANLASH
                   if (type == CatalogType.guruh) ...[
                     const SizedBox(height: 14),
-                    Text('KURS BOSQICHINI TANLANG (bosqichId)', style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.textSecondary)),
+                    Text(
+                      'KURS BOSQICHINI TANLANG (bosqichId)',
+                      style: AppTextStyles.badgeText.copyWith(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -421,15 +569,28 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
                           value: selectedBosqichId,
                           dropdownColor: AppColors.cardDark,
                           isExpanded: true,
-                          hint: const Text('Bosqichni tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                          hint: const Text(
+                            'Bosqichni tanlang',
+                            style: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 13,
+                            ),
+                          ),
                           items: provider.bosqichlar.map((b) {
                             return DropdownMenuItem<String>(
                               value: b.id,
-                              child: Text(b.name ?? 'Bosqich', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                              child: Text(
+                                b.name ?? 'Bosqich',
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 13,
+                                ),
+                              ),
                             );
                           }).toList(),
                           onChanged: (val) {
-                            if (val != null) setModalState(() => selectedBosqichId = val);
+                            if (val != null)
+                              setModalState(() => selectedBosqichId = val);
                           },
                         ),
                       ),
@@ -439,7 +600,13 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
                   // DROPDOWN FOR FAN -> KAFEDRA TANLASH
                   if (type == CatalogType.fan) ...[
                     const SizedBox(height: 14),
-                    Text('KAFEDRANI TANLANG (kafedraId)', style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.textSecondary)),
+                    Text(
+                      'KAFEDRANI TANLANG (kafedraId)',
+                      style: AppTextStyles.badgeText.copyWith(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -453,15 +620,28 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
                           value: selectedKafedraId,
                           dropdownColor: AppColors.cardDark,
                           isExpanded: true,
-                          hint: const Text('Kafedrani tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                          hint: const Text(
+                            'Kafedrani tanlang',
+                            style: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 13,
+                            ),
+                          ),
                           items: provider.kafedralar.map((k) {
                             return DropdownMenuItem<String>(
                               value: k.id,
-                              child: Text(k.name ?? 'Kafedra', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                              child: Text(
+                                k.name ?? 'Kafedra',
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 13,
+                                ),
+                              ),
                             );
                           }).toList(),
                           onChanged: (val) {
-                            if (val != null) setModalState(() => selectedKafedraId = val);
+                            if (val != null)
+                              setModalState(() => selectedKafedraId = val);
                           },
                         ),
                       ),
@@ -473,10 +653,18 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('BEKOR QILISH', style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted)),
+                child: Text(
+                  'BEKOR QILISH',
+                  style: AppTextStyles.bodyText.copyWith(
+                    color: AppColors.textMuted,
+                  ),
+                ),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.goldPrimary, foregroundColor: AppColors.backgroundDark),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.goldPrimary,
+                  foregroundColor: AppColors.backgroundDark,
+                ),
                 onPressed: () async {
                   final name = nameController.text.trim();
                   if (name.isEmpty) return;
@@ -504,10 +692,10 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
                     final id = (itemToEdit is CatalogResponse)
                         ? (itemToEdit.id ?? '')
                         : (itemToEdit is FanModel)
-                            ? (itemToEdit.id ?? '')
-                            : (itemToEdit is GuruhModel)
-                                ? (itemToEdit.id ?? '')
-                                : '';
+                        ? (itemToEdit.id ?? '')
+                        : (itemToEdit is GuruhModel)
+                        ? (itemToEdit.id ?? '')
+                        : '';
 
                     switch (type) {
                       case CatalogType.bosqich:
@@ -515,12 +703,20 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
                         break;
                       case CatalogType.fan:
                         if (selectedKafedraId != null) {
-                          await provider.updateFan(id, name, selectedKafedraId!);
+                          await provider.updateFan(
+                            id,
+                            name,
+                            selectedKafedraId!,
+                          );
                         }
                         break;
                       case CatalogType.guruh:
                         if (selectedBosqichId != null) {
-                          await provider.updateGuruh(id, name, selectedBosqichId!);
+                          await provider.updateGuruh(
+                            id,
+                            name,
+                            selectedBosqichId!,
+                          );
                         }
                         break;
                       case CatalogType.kafedra:
@@ -550,10 +746,19 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardDark,
-        title: Text('O\'CHIRISH TASHDIQLASH', style: AppTextStyles.titleHeader.copyWith(color: AppColors.error)),
-        content: Text('Haqiqatan ham ushbu elementni o\'chirib tashlamoqchimisiz?', style: AppTextStyles.bodyText),
+        title: Text(
+          'O\'CHIRISH TASHDIQLASH',
+          style: AppTextStyles.titleHeader.copyWith(color: AppColors.error),
+        ),
+        content: Text(
+          'Haqiqatan ham ushbu elementni o\'chirib tashlamoqchimisiz?',
+          style: AppTextStyles.bodyText,
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('BEKOR QILISH')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('BEKOR QILISH'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
