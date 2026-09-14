@@ -1,8 +1,7 @@
-import 'dart:async';
 import 'package:bilim_scan/screens/home/home_screen.dart';
 import 'package:bilim_scan/screens/login/student_login_screen.dart';
-import 'package:bilim_scan/screens/student/student_dashboard_screen.dart';
 import 'package:bilim_scan/services/storage_service.dart';
+import 'package:bilim_scan/services/network_discovery_service.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_assets.dart';
@@ -84,6 +83,9 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 600));
     _textController.forward();
 
+    // UDP Tarmoq skaneri orqali Spring Boot server IP manzili izlanadi
+    final discoveryFuture = NetworkDiscoveryService.discoverServerIp();
+
     // Progress simulation
     _progressController.addListener(() {
       setState(() {
@@ -101,12 +103,14 @@ class _SplashScreenState extends State<SplashScreen>
     });
 
     await _progressController.forward();
+    await discoveryFuture; // Skanerlash yakunlanishini kutamiz
     await Future.delayed(const Duration(milliseconds: 400));
 
     if (mounted) {
       StorageService storageService = StorageService();
-      String? token =await storageService.getAuthToken();
-      if(token==null) {
+      String? token = await storageService.getAuthToken();
+      if (!mounted) return;
+      if (token == null) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>

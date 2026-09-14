@@ -2,8 +2,22 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 class ApiConfig {
+  static String? _discoveredHost;
+
+  static void setDiscoveredHost(String host) {
+    _discoveredHost = host;
+    if (kDebugMode) {
+      debugPrint('📡 [API CONFIG] Dinamik server IP saqlandi: $host ($hostUrl)');
+    }
+  }
+
+  static String? get discoveredHost => _discoveredHost;
+
   // Host Server Base URL (without /api suffix)
   static String get hostUrl {
+    if (_discoveredHost != null && _discoveredHost!.isNotEmpty) {
+      return 'http://$_discoveredHost:4257';
+    }
     if (!kIsWeb && Platform.isAndroid) {
       return 'http://10.0.2.2:4257';
     }

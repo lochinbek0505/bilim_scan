@@ -89,6 +89,13 @@ class ApiService {
     );
   }
 
+  void updateBaseUrl(String newBaseUrl) {
+    dio.options.baseUrl = newBaseUrl;
+    if (kDebugMode) {
+      debugPrint('🔄 [API SERVICE] Dio BaseUrl yangilandi: $newBaseUrl');
+    }
+  }
+
   // Token Store Methods
   void setAuthToken(String token) {
     _authToken = token;
