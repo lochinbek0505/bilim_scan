@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'package:bilim_scan/screens/home/home_screen.dart';
+import 'package:bilim_scan/screens/login/student_login_screen.dart';
+import 'package:bilim_scan/screens/student/student_dashboard_screen.dart';
 import 'package:bilim_scan/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/tactical_background.dart';
-import '../login/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -109,7 +110,7 @@ class _SplashScreenState extends State<SplashScreen>
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-            const LoginScreen(),
+            const StudentLoginScreen(),
             transitionsBuilder: (context, animation, secondaryAnimation,
                 child) {
               return FadeTransition(

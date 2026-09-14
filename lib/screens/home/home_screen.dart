@@ -10,6 +10,7 @@ import '../edu_plan_management/edu_plan_management_screen.dart';
 import '../exam_management/exam_management_screen.dart';
 import '../catalog_management/catalog_management_screen.dart';
 import '../user_management/user_management_screen.dart';
+import '../monitoring/student_monitoring_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -297,7 +298,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         badgeText: 'Analitika',
                         icon: Icons.bar_chart_rounded,
                         accentColor: const Color(0xFF3B82F6),
-                        onTap: () => _showStatisticsDialog(context),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => const StudentMonitoringScreen()),
+                          );
+                        },
                       ),
                     ],
                   ),

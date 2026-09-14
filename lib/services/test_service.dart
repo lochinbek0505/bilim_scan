@@ -24,15 +24,43 @@ class TestService {
     }
   }
 
+  /// GET /api/tests/{testId}/questions
+  Future<List<QuestionModel>> getQuestionsByTestId(String testId) async {
+    try {
+      final response = await _apiService.dio.get('${ApiConfig.tests}/$testId/questions');
+      if (response.statusCode == 200 && response.data != null) {
+        final List<dynamic> list = response.data as List<dynamic>;
+        return list.map((e) => QuestionModel.fromJson(e as Map<String, dynamic>)).toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [TEST SERVICE GET QUESTIONS ERR]: ${e.message}');
+      }
+      return [];
+    }
+  }
+
   /// POST /api/tests (Token bilan)
   Future<TestModel?> createTest(TestModel test) async {
     try {
       final response = await _apiService.dio.post(
         ApiConfig.tests,
-        data: test.toJson(),
+        data: {
+          "name": test.name,
+          "fanId": test.fanId,
+          "kafedraId": test.kafedraId,
+          "eduPlanId": test.eduPlanId,
+          "guruhId": test.guruhId,
+          "oquvYili": test.oquvYili,
+        },
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return TestModel.fromJson(response.data as Map<String, dynamic>);
+        final created = TestModel.fromJson(response.data as Map<String, dynamic>);
+        if (test.questions.isNotEmpty) {
+           await uploadQuestionsBulk(created.id, test.questions);
+        }
+        return created.copyWith(questions: test.questions);
       }
       return null;
     } on DioException catch (e) {
@@ -40,6 +68,26 @@ class TestService {
         debugPrint('❌ [TEST SERVICE CREATE ERR]: ${e.message}');
       }
       return null;
+    }
+  }
+
+  /// POST /api/tests/{testId}/questions/bulk
+  Future<bool> uploadQuestionsBulk(String testId, List<QuestionModel> questions) async {
+    final payload = questions.map((q) => q.toJson()).toList();
+    print(payload);
+
+    try {
+      final response = await _apiService.dio.post(
+        '${ApiConfig.tests}/$testId/questions/bulk',
+        data: payload,
+      );
+      print(response.data);
+      return response.statusCode == 200 || response.statusCode == 201;
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [TEST SERVICE BULK UPLOAD ERR]: ${e.message}');
+      }
+      return false;
     }
   }
 

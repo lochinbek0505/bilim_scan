@@ -5,7 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../models/exam_model.dart';
-import '../../providers/catalog_provider.dart';
+import '../../models/guruh_model.dart';
 import '../../providers/exam_provider.dart';
 import '../../providers/test_provider.dart';
 
@@ -184,9 +184,12 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
           ),
           const SizedBox(height: 12),
 
-          Row(
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
             children: [
-              Expanded(
+              SizedBox(
+                width: 260,
                 child: TextField(
                   controller: _searchController,
                   onChanged: (val) => provider.setSearchQuery(val),
@@ -203,21 +206,45 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
 
+              // Bosqich Filter
+              _buildFilterDropdown(
+                hint: 'Bosqich: Barchasi',
+                value: provider.selectedBosqichFilter,
+                items: provider.bosqichlarMap.entries
+                    .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12))))
+                    .toList(),
+                onChanged: (val) => provider.setBosqichFilter(val),
+              ),
+
+              // Guruh Filter
               _buildFilterDropdown(
                 hint: 'Guruh: Barchasi',
                 value: provider.selectedGuruhFilter,
-                items: provider.guruhlarMap.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)))).toList(),
+                items: provider.rawGuruhlar
+                    .where((g) => g.id != null && (provider.selectedBosqichFilter == null || g.bosqich?.id == provider.selectedBosqichFilter))
+                    .map((g) => DropdownMenuItem(value: g.id!, child: Text(g.name ?? 'Guruh', style: const TextStyle(color: AppColors.textPrimary, fontSize: 12))))
+                    .toList(),
                 onChanged: (val) => provider.setGuruhFilter(val),
               ),
 
-              const SizedBox(width: 12),
+              // Test Filter
+              _buildFilterDropdown(
+                hint: 'Test: Barchasi',
+                value: provider.selectedTestFilter,
+                items: provider.testsMap.entries
+                    .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12))))
+                    .toList(),
+                onChanged: (val) => provider.setTestFilter(val),
+              ),
 
+              // Status Filter
               _buildFilterDropdown(
                 hint: 'Status: Barchasi',
                 value: provider.selectedStatusFilter,
-                items: provider.statusList.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)))).toList(),
+                items: provider.statusList
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12))))
+                    .toList(),
                 onChanged: (val) => provider.setStatusFilter(val),
               ),
             ],
@@ -406,32 +433,54 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
     );
   }
 
-  // CREATE / EDIT EXAM FORM DIALOG (INTEGRATED WITH /api/exams/create)
+  // CREATE / EDIT EXAM FORM DIALOG
   void _showExamFormDialog(BuildContext context, ExamModel? examToEdit) {
     final examProvider = Provider.of<ExamProvider>(context, listen: false);
-    final catalogProvider = Provider.of<CatalogProvider>(context, listen: false);
     final testProvider = Provider.of<TestProvider>(context, listen: false);
 
-    final nameController = TextEditingController(text: examToEdit?.name ?? 'Matematika fanidan 1-oraliq nazorat imtihoni');
+    final nameController = TextEditingController(text: examToEdit?.name ?? '');
     final durationController = TextEditingController(text: (examToEdit?.durationMinutes ?? 20).toString());
     final questionCountController = TextEditingController(text: (examToEdit?.questionCount ?? 5).toString());
     final maxAttemptsController = TextEditingController(text: (examToEdit?.maxAttempts ?? 20).toString());
 
-    // Selected Test and Guruh IDs
-    String selectedTestId = examToEdit?.testId ??
-        (testProvider.tests.isNotEmpty ? testProvider.tests.first.id : '6aa2dc8219ef3807c41081be');
+    final allTests = testProvider.tests.isNotEmpty ? testProvider.tests : examProvider.rawTests;
+    final allGuruhs = examProvider.rawGuruhlar;
+    final allBosqichs = examProvider.rawBosqichlar;
 
-    String selectedGuruhId = examToEdit?.guruhId ??
-        (catalogProvider.guruhlar.isNotEmpty ? catalogProvider.guruhlar.first.id! : '6aa0f1e7e21b3be71d3be9d3');
+    String? selectedTestId = examToEdit?.testId;
+    if (selectedTestId == null || !allTests.any((t) => t.id == selectedTestId)) {
+      selectedTestId = allTests.isNotEmpty ? allTests.first.id : null;
+    }
+
+    String? selectedGuruhId = examToEdit?.guruhId;
+    if (selectedGuruhId == null || !allGuruhs.any((g) => g.id == selectedGuruhId)) {
+      selectedGuruhId = allGuruhs.isNotEmpty ? allGuruhs.first.id : null;
+    }
+
+    String? selectedBosqichId = allGuruhs
+        .firstWhere((g) => g.id == selectedGuruhId, orElse: () => GuruhModel())
+        .bosqich
+        ?.id;
+    if (selectedBosqichId == null && allBosqichs.isNotEmpty) {
+      selectedBosqichId = allBosqichs.first.id;
+    }
 
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setModalState) {
+          final filteredGuruhlar = allGuruhs
+              .where((g) => g.id != null && (selectedBosqichId == null || g.bosqich?.id == selectedBosqichId))
+              .toList();
+
+          if (selectedGuruhId == null || !filteredGuruhlar.any((g) => g.id == selectedGuruhId)) {
+            selectedGuruhId = filteredGuruhlar.isNotEmpty ? filteredGuruhlar.first.id : null;
+          }
+
           final currentApiJson = {
             if (nameController.text.trim().isNotEmpty) "name": nameController.text.trim(),
-            "testId": selectedTestId,
-            "guruhId": selectedGuruhId,
+            "testId": selectedTestId ?? "",
+            "guruhId": selectedGuruhId ?? "",
             "durationMinutes": int.tryParse(durationController.text) ?? 20,
             "questionCount": int.tryParse(questionCountController.text) ?? 5,
             "maxAttempts": int.tryParse(maxAttemptsController.text) ?? 20,
@@ -451,13 +500,13 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  examToEdit == null ? 'YANGI IMTIHON YARATISH (/api/exams/create)' : 'IMTIHONNI TAHRIRLASH',
+                  examToEdit == null ? 'YANGI IMTIHON YARATISH' : 'IMTIHONNI TAHRIRLASH',
                   style: AppTextStyles.titleHeader.copyWith(fontSize: 16),
                 ),
               ],
             ),
             content: SizedBox(
-              width: 580,
+              width: 600,
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,30 +522,37 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                     ),
                     const SizedBox(height: 14),
 
+                    // BOSQICH & GURUH SELECTOR ROW
                     Row(
                       children: [
-                        // TEST SELECTOR
+                        // BOSQICH SELECTOR
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFormLabel('TESTNI TANLANG (testId)'),
+                              _buildFormLabel('BOSQICH (KURS)'),
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: selectedTestId,
+                                  child: DropdownButton<String?>(
+                                    value: selectedBosqichId,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: testProvider.tests.map((t) {
-                                      return DropdownMenuItem<String>(value: t.id, child: Text(t.name, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)));
-                                    }).toList()..addAll(
-                                      examProvider.testsMap.entries.where((e) => !testProvider.tests.any((t) => t.id == e.key)).map((e) {
-                                        return DropdownMenuItem<String>(value: e.key, child: Text(e.value, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)));
-                                      })
-                                    ),
+                                    hint: const Text('Bosqich tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                                    items: allBosqichs.map((b) {
+                                      return DropdownMenuItem<String?>(
+                                        value: b.id,
+                                        child: Text(b.name ?? 'Bosqich', style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)),
+                                      );
+                                    }).toList(),
                                     onChanged: (val) {
-                                      if (val != null) setModalState(() => selectedTestId = val);
+                                      setModalState(() {
+                                        selectedBosqichId = val;
+                                        final newFiltered = allGuruhs
+                                            .where((g) => g.id != null && (val == null || g.bosqich?.id == val))
+                                            .toList();
+                                        selectedGuruhId = newFiltered.isNotEmpty ? newFiltered.first.id : null;
+                                      });
                                     },
                                   ),
                                 ),
@@ -511,21 +567,24 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFormLabel('GURUHNINI TANLANG (guruhId)'),
+                              _buildFormLabel('GURUH (guruhId)'),
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
+                                  child: DropdownButton<String?>(
                                     value: selectedGuruhId,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: catalogProvider.guruhlar.map((g) {
-                                      return DropdownMenuItem<String>(value: g.id!, child: Text('${g.name ?? "Guruh"} (${g.bosqich?.name ?? ""})', style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)));
-                                    }).toList()..addAll(
-                                      examProvider.guruhlarMap.entries.where((e) => !catalogProvider.guruhlar.any((g) => g.id == e.key)).map((e) {
-                                        return DropdownMenuItem<String>(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)));
-                                      })
-                                    ),
+                                    hint: const Text('Guruh tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                                    items: filteredGuruhlar.map((g) {
+                                      return DropdownMenuItem<String?>(
+                                        value: g.id,
+                                        child: Text(
+                                          '${g.name ?? "Guruh"} ${g.bosqich?.name != null ? "(${g.bosqich?.name})" : ""}',
+                                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 12),
+                                        ),
+                                      );
+                                    }).toList(),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedGuruhId = val);
                                     },
@@ -536,6 +595,31 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                           ),
                         ),
                       ],
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // TEST SELECTOR
+                    _buildFormLabel('TESTNI TANLANG (testId)'),
+                    const SizedBox(height: 4),
+                    _buildDropdownContainer(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String?>(
+                          value: selectedTestId,
+                          dropdownColor: AppColors.cardDark,
+                          isExpanded: true,
+                          hint: const Text('Test tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                          items: allTests.map((t) {
+                            return DropdownMenuItem<String?>(
+                              value: t.id,
+                              child: Text(t.name, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) setModalState(() => selectedTestId = val);
+                          },
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 14),
@@ -627,6 +711,13 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.goldPrimary, foregroundColor: AppColors.backgroundDark),
                 onPressed: () async {
+                  if (selectedTestId == null || selectedGuruhId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Test va Guruh tanlanishi shart!'), backgroundColor: AppColors.error),
+                    );
+                    return;
+                  }
+
                   final name = nameController.text.trim();
                   final duration = int.tryParse(durationController.text.trim()) ?? 20;
                   final count = int.tryParse(questionCountController.text.trim()) ?? 5;
@@ -635,8 +726,8 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                   final newExam = ExamModel(
                     id: examToEdit?.id ?? '',
                     name: name.isEmpty ? 'Imtihon' : name,
-                    testId: selectedTestId,
-                    guruhId: selectedGuruhId,
+                    testId: selectedTestId!,
+                    guruhId: selectedGuruhId!,
                     durationMinutes: duration,
                     questionCount: count,
                     maxAttempts: attempts,

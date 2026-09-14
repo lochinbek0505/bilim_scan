@@ -5,14 +5,14 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 
-enum UserRole { kursant, oqituvchi, admin }
+enum UserRole { user, teacher, admin }
 
 extension UserRoleExtension on UserRole {
   String get title {
     switch (this) {
-      case UserRole.kursant:
+      case UserRole.user:
         return 'O\'quvchi / Kursant';
-      case UserRole.oqituvchi:
+      case UserRole.teacher:
         return 'O\'qituvchi / Nazoratchi';
       case UserRole.admin:
         return 'Administrator';
@@ -21,9 +21,9 @@ extension UserRoleExtension on UserRole {
 
   String get code {
     switch (this) {
-      case UserRole.kursant:
+      case UserRole.user:
         return 'STUDENT_ROLE';
-      case UserRole.oqituvchi:
+      case UserRole.teacher:
         return 'TEACHER_ROLE';
       case UserRole.admin:
         return 'SYS_ADMIN';
@@ -36,7 +36,7 @@ class AuthProvider extends ChangeNotifier {
   final StorageService _storageService = StorageService();
 
   LoginModel? _currentUserModel;
-  UserRole _selectedRole = UserRole.kursant;
+  UserRole _selectedRole = UserRole.user;
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _rememberMe = true;

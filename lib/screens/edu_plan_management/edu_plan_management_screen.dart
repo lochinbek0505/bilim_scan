@@ -1,9 +1,13 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../models/edu_plan_model.dart';
+import '../../providers/catalog_provider.dart';
 import '../../providers/edu_plan_provider.dart';
 
 class EduPlanManagementScreen extends StatefulWidget {
@@ -40,11 +44,11 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'O\'QUV REJALARI VA FILTRLASH',
+                'O\'QUV REJALARI VA FILTRLASH (EDU PLAN CRUD)',
                 style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textPrimary),
               ),
               Text(
-                'O\'quv yili, oyi, kafedra va fanlar bo\'yicha rejalar katalogi',
+                'O\'quv yili, kafedra va fanlar bo\'yicha rejalar katalogi hamda Excel importi',
                 style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted),
               ),
             ],
@@ -137,36 +141,27 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Search Field
-          TextField(
-            controller: _searchController,
-            onChanged: (val) => provider.setSearchQuery(val),
-            style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
-            decoration: InputDecoration(
-              hintText: 'O\'quv reja nomi bo\'yicha kalit so\'z kiriting...',
-              hintStyle: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 13),
-              prefixIcon: const Icon(Icons.search, color: Color(0xFF14B8A6), size: 20),
-              filled: true,
-              fillColor: AppColors.inputBackground,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.cardBorder),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFF14B8A6)),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Dropdowns Row (Fan, Kafedra, O'quv Yili, O'quv Oyi)
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+          Row(
             children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => provider.setSearchQuery(val),
+                  style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: 'O\'quv reja nomi bo\'yicha kalit so\'z kiriting...',
+                    hintStyle: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 13),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF14B8A6), size: 20),
+                    filled: true,
+                    fillColor: AppColors.inputBackground,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.cardBorder)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF14B8A6))),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+
               // 1. Fan Filter
               _buildFilterDropdown(
                 hint: 'Fan: Barchasi',
@@ -174,6 +169,8 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                 items: provider.fans.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)))).toList(),
                 onChanged: (val) => provider.setFanFilter(val),
               ),
+
+              const SizedBox(width: 12),
 
               // 2. Kafedra Filter
               _buildFilterDropdown(
@@ -183,20 +180,14 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                 onChanged: (val) => provider.setKafedraFilter(val),
               ),
 
+              const SizedBox(width: 12),
+
               // 3. O'quv Yili Filter
               _buildFilterDropdown(
                 hint: 'O\'quv Yili: Barchasi',
                 value: provider.selectedOquvYiliFilter,
                 items: provider.oquvYillari.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)))).toList(),
                 onChanged: (val) => provider.setOquvYiliFilter(val),
-              ),
-
-              // 4. O'quv Oyi Filter
-              _buildFilterDropdown(
-                hint: 'O\'quv Oyi: Barchasi',
-                value: provider.selectedOquvOyiFilter,
-                items: provider.oquvOylari.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)))).toList(),
-                onChanged: (val) => provider.setOquvOyiFilter(val),
               ),
             ],
           ),
@@ -224,10 +215,7 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
           dropdownColor: AppColors.cardDark,
           hint: Text(hint, style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 12)),
           items: [
-            DropdownMenuItem<String?>(
-              value: null,
-              child: Text('$hint (Barchasi)', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
-            ),
+            DropdownMenuItem<String?>(value: null, child: Text('$hint (Barchasi)', style: const TextStyle(color: AppColors.textMuted, fontSize: 12))),
             ...items,
           ],
           onChanged: onChanged,
@@ -324,8 +312,6 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                 children: [
                   _buildBadge(Icons.calendar_today, 'O\'quv yili: ${plan.oquvYili}', AppColors.goldPrimary),
                   const SizedBox(width: 10),
-                  _buildBadge(Icons.event_outlined, 'Oyi: ${plan.oquvOyi}', AppColors.emeraldAccent),
-                  const SizedBox(width: 10),
                   _buildBadge(Icons.topic_outlined, '${plan.topics.length} ta mavzu', const Color(0xFF14B8A6)),
                 ],
               ),
@@ -364,17 +350,20 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
     );
   }
 
-  // CREATE / EDIT EDU PLAN DIALOG
+  // CREATE / EDIT EDU PLAN DIALOG (EXCEL .xlsx & JSON PARSER INTEGRATED)
   void _showEduPlanFormDialog(BuildContext context, EduPlanModel? planToEdit) {
     final eduPlanProvider = Provider.of<EduPlanProvider>(context, listen: false);
+    final catalogProvider = Provider.of<CatalogProvider>(context, listen: false);
 
     final nameController = TextEditingController(text: planToEdit?.name ?? '');
-    final oquvOyiController = TextEditingController(text: planToEdit?.oquvOyi ?? 'Sentyabr');
-    final oquvYiliController = TextEditingController(text: planToEdit?.oquvYili ?? '2026-2027');
+    String selectedOquvYili = planToEdit?.oquvYili ?? (eduPlanProvider.oquvYillari.isNotEmpty ? eduPlanProvider.oquvYillari.first : '2025-2026');
     final jsonImportController = TextEditingController();
 
-    String selectedFanId = planToEdit?.fanId ?? eduPlanProvider.fans.keys.first;
-    String selectedKafedraId = planToEdit?.kafedraId ?? eduPlanProvider.kafedras.keys.first;
+    String selectedFanId = planToEdit?.fanId ??
+        (catalogProvider.fanlar.isNotEmpty ? catalogProvider.fanlar.first.id! : eduPlanProvider.fans.keys.first);
+
+    String selectedKafedraId = planToEdit?.kafedraId ??
+        (catalogProvider.kafedralar.isNotEmpty ? catalogProvider.kafedralar.first.id! : eduPlanProvider.kafedras.keys.first);
 
     List<EduPlanTopicModel> currentTopics = planToEdit != null ? List.from(planToEdit.topics) : [];
 
@@ -396,34 +385,35 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  planToEdit == null ? 'YANGI O\'QUV REJA YARATISH' : 'O\'QUV REJANI TAHRIRLASH',
+                  planToEdit == null ? 'YANGI O\'QUV REJA YARATISH (/api/edu-plans)' : 'O\'QUV REJANI TAHRIRLASH',
                   style: AppTextStyles.titleHeader.copyWith(fontSize: 16),
                 ),
               ],
             ),
             content: SizedBox(
-              width: 560,
+              width: 600,
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildFormLabel('REJA NOMI'),
+                    _buildFormLabel('O\'QUV REJA NOMI (NAME)'),
                     const SizedBox(height: 4),
                     TextField(
                       controller: nameController,
                       style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
-                      decoration: _inputDecoration('Masalan: Matematika fanidan o\'quv rejasi'),
+                      decoration: _inputDecoration('Masalan: INFORMATIKA VA AXBOROT TEXNOLOGIYALARI'),
                     ),
                     const SizedBox(height: 14),
 
                     Row(
                       children: [
+                        // FAN DROPDOWN
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFormLabel('FAN'),
+                              _buildFormLabel('FAN (fanId)'),
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
@@ -431,9 +421,13 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                                     value: selectedFanId,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: eduPlanProvider.fans.entries.map((e) {
-                                      return DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
-                                    }).toList(),
+                                    items: catalogProvider.fanlar.map((f) {
+                                      return DropdownMenuItem<String>(value: f.id!, child: Text(f.name ?? 'Fan', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
+                                    }).toList()..addAll(
+                                      eduPlanProvider.fans.entries.where((e) => !catalogProvider.fanlar.any((f) => f.id == e.key)).map((e) {
+                                        return DropdownMenuItem<String>(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
+                                      })
+                                    ),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedFanId = val);
                                     },
@@ -444,11 +438,13 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
+
+                        // KAFEDRA DROPDOWN
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFormLabel('KAFEDRA'),
+                              _buildFormLabel('KAFEDRA (kafedraId)'),
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
@@ -456,9 +452,13 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                                     value: selectedKafedraId,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: eduPlanProvider.kafedras.entries.map((e) {
-                                      return DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
-                                    }).toList(),
+                                    items: catalogProvider.kafedralar.map((k) {
+                                      return DropdownMenuItem<String>(value: k.id!, child: Text(k.name ?? 'Kafedra', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
+                                    }).toList()..addAll(
+                                      eduPlanProvider.kafedras.entries.where((e) => !catalogProvider.kafedralar.any((k) => k.id == e.key)).map((e) {
+                                        return DropdownMenuItem<String>(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
+                                      })
+                                    ),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedKafedraId = val);
                                     },
@@ -473,59 +473,125 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
 
                     const SizedBox(height: 14),
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildFormLabel('O\'QUV OYI'),
-                              const SizedBox(height: 4),
-                              TextField(
-                                controller: oquvOyiController,
-                                style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
-                                decoration: _inputDecoration('Sentyabr'),
-                              ),
-                            ],
-                          ),
+                    _buildFormLabel('O\'QUV YILI (oquvYili)'),
+                    const SizedBox(height: 4),
+                    _buildDropdownContainer(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: eduPlanProvider.oquvYillari.contains(selectedOquvYili) ? selectedOquvYili : (eduPlanProvider.oquvYillari.isNotEmpty ? eduPlanProvider.oquvYillari.first : '2025-2026'),
+                          dropdownColor: AppColors.cardDark,
+                          isExpanded: true,
+                          items: eduPlanProvider.oquvYillari.map((val) {
+                            return DropdownMenuItem<String>(
+                              value: val,
+                              child: Text(val, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setModalState(() => selectedOquvYili = val);
+                            }
+                          },
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildFormLabel('O\'QUV YILI'),
-                              const SizedBox(height: 4),
-                              TextField(
-                                controller: oquvYiliController,
-                                style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
-                                decoration: _inputDecoration('2026-2027'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
 
                     const SizedBox(height: 18),
                     const Divider(color: AppColors.cardBorder),
                     const SizedBox(height: 10),
 
-                    // JSON Topics Import Section
+                    // EXCEL (.xlsx) AND JSON IMPORT SECTION
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildFormLabel('MAVZULAR FAYLI (JSON TOPICS)'),
+                        _buildFormLabel('MAVZULAR FAYLI (EXCEL .xlsx / JSON IMPORT)'),
                         Text('${currentTopics.length} ta mavzu yuklangan', style: AppTextStyles.badgeText.copyWith(color: const Color(0xFF14B8A6))),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
+
+                    // NATIVE FILE PICKER BUTTON FOR EXCEL (.xlsx)
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.table_chart_outlined, size: 18),
+                      label: const Text('📂 KOMPYUTERDAN EXCEL (.xlsx) FAYLNI TANLASH'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF14B8A6),
+                        foregroundColor: AppColors.backgroundDark,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      onPressed: () async {
+                        try {
+                          final PlatformFile? file = await FilePicker.pickFile(
+                            type: FileType.custom,
+                            allowedExtensions: ['xlsx', 'xls', 'json'],
+                          );
+
+                          if (file != null) {
+                            if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                              // Read Excel Bytes
+                              final bytes = file.path != null && file.path!.isNotEmpty
+                                  ? await File(file.path!).readAsBytes()
+                                  : await file.readAsBytes();
+
+                              final parsed = eduPlanProvider.parseTopicsFromExcelBytes(bytes);
+                              final extractedTitle = parsed['title'] as String? ?? '';
+                              final extractedTopics = parsed['topics'] as List<EduPlanTopicModel>? ?? [];
+
+                              setModalState(() {
+                                if (extractedTitle.isNotEmpty && nameController.text.isEmpty) {
+                                  nameController.text = extractedTitle;
+                                }
+                                currentTopics = extractedTopics;
+                              });
+
+                              if (dialogContext.mounted) {
+                                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                  SnackBar(
+                                    content: Text('✔ Excel faylidan ${extractedTopics.length} ta mavzu va reja nomi muvaffaqiyatli o\'qindi!'),
+                                    backgroundColor: const Color(0xFF14B8A6),
+                                  ),
+                                );
+                              }
+                            } else if (file.name.endsWith('.json')) {
+                              final jsonStr = file.path != null && file.path!.isNotEmpty
+                                  ? await File(file.path!).readAsString()
+                                  : utf8.decode(await file.readAsBytes());
+
+                              jsonImportController.text = jsonStr;
+                              final parsedTopics = eduPlanProvider.parseTopicsFromJson(jsonStr);
+
+                              setModalState(() {
+                                currentTopics = parsedTopics;
+                              });
+
+                              if (dialogContext.mounted) {
+                                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                  SnackBar(
+                                    content: Text('✔ JSON faylidan ${parsedTopics.length} ta mavzu muvaffaqiyatli o\'qindi!'),
+                                    backgroundColor: const Color(0xFF14B8A6),
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        } catch (e) {
+                          if (dialogContext.mounted) {
+                            ScaffoldMessenger.of(dialogContext).showSnackBar(
+                              SnackBar(content: Text('Faylni o\'qishda xatolik: $e'), backgroundColor: AppColors.error),
+                            );
+                          }
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 10),
+
                     TextField(
                       controller: jsonImportController,
-                      maxLines: 4,
-                      style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textPrimary, fontFamily: 'monospace'),
+                      maxLines: 3,
+                      style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textPrimary, fontFamily: 'monospace'),
                       decoration: InputDecoration(
-                        hintText: 'Mavzular JSON fayli kontentini joylashtiring...',
+                        hintText: 'Yoki JSON matnini bu yerga joylashtiring...',
                         hintStyle: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted),
                         filled: true,
                         fillColor: AppColors.inputBackground,
@@ -536,9 +602,9 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
 
                     ElevatedButton.icon(
                       icon: const Icon(Icons.file_upload_outlined, size: 16),
-                      label: const Text('MAVZULAR FAYLINI PARSE QILISH'),
+                      label: const Text('MATNNI PARSE QILISH'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF14B8A6),
+                        backgroundColor: AppColors.emeraldPrimary,
                         foregroundColor: Colors.white,
                       ),
                       onPressed: () {
@@ -571,27 +637,26 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF14B8A6), foregroundColor: AppColors.backgroundDark),
-                onPressed: () {
+                onPressed: () async {
                   final name = nameController.text.trim();
                   if (name.isEmpty) return;
 
                   final newPlan = EduPlanModel(
-                    id: planToEdit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                    id: planToEdit?.id ?? '',
                     name: name,
                     fanId: selectedFanId,
                     kafedraId: selectedKafedraId,
-                    oquvOyi: oquvOyiController.text.trim(),
-                    oquvYili: oquvYiliController.text.trim(),
+                    oquvYili: selectedOquvYili,
                     topics: currentTopics,
                   );
 
                   if (planToEdit == null) {
-                    eduPlanProvider.addEduPlan(newPlan);
+                    await eduPlanProvider.createEduPlan(newPlan);
                   } else {
-                    eduPlanProvider.updateEduPlan(newPlan);
+                    await eduPlanProvider.updateEduPlan(newPlan);
                   }
 
-                  Navigator.of(dialogContext).pop();
+                  if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                 },
                 child: Text(planToEdit == null ? 'YARATISH' : 'SAQLASH'),
               ),
@@ -638,16 +703,16 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(color: const Color(0xFF14B8A6).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
-                            child: Text('TR ${t.tr}', style: AppTextStyles.badgeText.copyWith(color: const Color(0xFF14B8A6))),
+                            child: Text('T/R ${t.tr}', style: AppTextStyles.badgeText.copyWith(color: const Color(0xFF14B8A6))),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(t.title, style: AppTextStyles.bodyText.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                                Text(t.name, style: AppTextStyles.bodyText.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                                 const SizedBox(height: 2),
-                                Text('${t.tur} • ${t.soat} soat', style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted)),
+                                Text('Turi: ${t.type} • ${t.soat} soat', style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted)),
                               ],
                             ),
                           ),
@@ -679,9 +744,9 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
           TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('BEKOR QILISH')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () {
-              provider.deleteEduPlan(id);
-              Navigator.of(context).pop();
+            onPressed: () async {
+              await provider.deleteEduPlan(id);
+              if (context.mounted) Navigator.of(context).pop();
             },
             child: const Text('O\'CHIRISH'),
           ),
@@ -708,7 +773,7 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
 
   Widget _buildDropdownContainer({required Widget child}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: AppColors.inputBackground,
         borderRadius: BorderRadius.circular(8),

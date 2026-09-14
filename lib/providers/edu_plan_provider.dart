@@ -1,8 +1,16 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:archive/archive.dart';
+import 'package:excel/excel.dart';
+import 'package:flutter/foundation.dart';
 import '../models/edu_plan_model.dart';
+import '../services/edu_plan_service.dart';
+import '../services/catalog_service.dart';
 
 class EduPlanProvider extends ChangeNotifier {
+  final EduPlanService _service = EduPlanService();
+  final CatalogService _catalogService = CatalogService();
+
+  bool _isLoading = false;
   List<EduPlanModel> _eduPlans = [];
   String _searchQuery = '';
 
@@ -10,39 +18,13 @@ class EduPlanProvider extends ChangeNotifier {
   String? _selectedFanFilter;
   String? _selectedKafedraFilter;
   String? _selectedOquvYiliFilter;
-  String? _selectedOquvOyiFilter;
 
-  final Map<String, String> fans = {
-    '6aa0f1d0e21b3be71d3be9d1': 'Matematika',
-    '6aa0f1d0e21b3be71d3be9d2': 'Informatika va AT',
-    '6aa0f1d0e21b3be71d3be9d3': 'Fizika',
-  };
+  Map<String, String> fans = {};
+  Map<String, String> kafedras = {};
 
-  final Map<String, String> kafedras = {
-    '6aa0f20fe21b3be71d3be9d5': 'Informatika va AT kafedrasi',
-    '6aa0f20fe21b3be71d3be9d6': 'Aniqlik fanlar kafedrasi',
-  };
+  late final List<String> oquvYillari;
 
-  final List<String> oquvYillari = [
-    '2025-2026',
-    '2026-2027',
-  ];
-
-  final List<String> oquvOylari = [
-    'Sentyabr',
-    'Oktyabr',
-    'Noyabr',
-    'Dekabr',
-    'Yanvar',
-    'Fevral',
-    'Mart',
-    'Aprel',
-    'May',
-  ];
-
-  EduPlanProvider() {
-    _loadInitialSampleData();
-  }
+  bool get isLoading => _isLoading;
 
   List<EduPlanModel> get eduPlans {
     return _eduPlans.where((plan) {
@@ -50,9 +32,8 @@ class EduPlanProvider extends ChangeNotifier {
       final matchesFan = _selectedFanFilter == null || plan.fanId == _selectedFanFilter;
       final matchesKafedra = _selectedKafedraFilter == null || plan.kafedraId == _selectedKafedraFilter;
       final matchesOquvYili = _selectedOquvYiliFilter == null || plan.oquvYili == _selectedOquvYiliFilter;
-      final matchesOquvOyi = _selectedOquvOyiFilter == null || plan.oquvOyi == _selectedOquvOyiFilter;
 
-      return matchesSearch && matchesFan && matchesKafedra && matchesOquvYili && matchesOquvOyi;
+      return matchesSearch && matchesFan && matchesKafedra && matchesOquvYili;
     }).toList();
   }
 
@@ -60,14 +41,24 @@ class EduPlanProvider extends ChangeNotifier {
   String? get selectedFanFilter => _selectedFanFilter;
   String? get selectedKafedraFilter => _selectedKafedraFilter;
   String? get selectedOquvYiliFilter => _selectedOquvYiliFilter;
-  String? get selectedOquvOyiFilter => _selectedOquvOyiFilter;
 
   bool get hasActiveFilters =>
       _selectedFanFilter != null ||
       _selectedKafedraFilter != null ||
       _selectedOquvYiliFilter != null ||
-      _selectedOquvOyiFilter != null ||
       _searchQuery.isNotEmpty;
+
+  EduPlanProvider() {
+    _initOquvYillari();
+    fetchEduPlans();
+  }
+
+  void _initOquvYillari() {
+    oquvYillari = List.generate(50, (index) {
+      int startYear = 2024 + index;
+      return '$startYear-${startYear + 1}';
+    });
+  }
 
   void setSearchQuery(String query) {
     _searchQuery = query;
@@ -89,91 +80,360 @@ class EduPlanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setOquvOyiFilter(String? oquvOyi) {
-    _selectedOquvOyiFilter = oquvOyi;
-    notifyListeners();
-  }
-
   void resetFilters() {
     _searchQuery = '';
     _selectedFanFilter = null;
     _selectedKafedraFilter = null;
     _selectedOquvYiliFilter = null;
-    _selectedOquvOyiFilter = null;
     notifyListeners();
   }
 
-  void addEduPlan(EduPlanModel plan) {
-    _eduPlans.add(plan);
+  Future<void> fetchEduPlans() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final futures = await Future.wait([
+        _service.getEduPlans(),
+        _catalogService.getFanlar(),
+        _catalogService.getKafedralar(),
+      ]);
+
+      final plansResult = futures[0] as List<EduPlanModel>;
+      if (plansResult.isNotEmpty) {
+        _eduPlans = plansResult;
+      }
+
+      final fanlarList = futures[1] as List<dynamic>;
+      fans = {
+        for (var fan in fanlarList)
+          if (fan.id != null) fan.id!: fan.name ?? 'Noma\'lum fan',
+      };
+
+      final kafedralarList = futures[2] as List<dynamic>;
+      kafedras = {
+        for (var k in kafedralarList)
+          if (k.id != null) k.id!: k.name ?? 'Noma\'lum kafedra',
+      };
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error fetching edu plans and catalog data: $e');
+      }
+    }
+
+    _isLoading = false;
     notifyListeners();
   }
 
-  void updateEduPlan(EduPlanModel plan) {
+  Future<bool> createEduPlan(EduPlanModel plan) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final result = await _service.createEduPlan(plan);
+
+    final newPlan = result ??
+        EduPlanModel(
+          id: 'plan_${DateTime.now().millisecondsSinceEpoch}',
+          name: plan.name,
+          fanId: plan.fanId,
+          kafedraId: plan.kafedraId,
+          oquvYili: plan.oquvYili,
+          topics: plan.topics,
+        );
+
+    _eduPlans.add(newPlan);
+    _isLoading = false;
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> addEduPlan(EduPlanModel plan) => createEduPlan(plan);
+
+  Future<bool> updateEduPlan(EduPlanModel plan) async {
+    _isLoading = true;
+    notifyListeners();
+
+    await _service.updateEduPlan(plan);
+
     final index = _eduPlans.indexWhere((p) => p.id == plan.id);
     if (index != -1) {
       _eduPlans[index] = plan;
-      notifyListeners();
     }
+
+    _isLoading = false;
+    notifyListeners();
+    return true;
   }
 
-  void deleteEduPlan(String id) {
+  Future<bool> deleteEduPlan(String id) async {
+    await _service.deleteEduPlan(id);
     _eduPlans.removeWhere((p) => p.id == id);
     notifyListeners();
+    return true;
   }
 
-  // Parse topics list from JSON file content
+  // Parse topics list from JSON string content
   List<EduPlanTopicModel> parseTopicsFromJson(String jsonContent) {
     try {
       final List<dynamic> jsonList = jsonDecode(jsonContent);
       return jsonList.map((t) => EduPlanTopicModel.fromJson(t as Map<String, dynamic>)).toList();
     } catch (e) {
-      debugPrint('JSON Parse error in edu plan topics: $e');
+      if (kDebugMode) {
+        debugPrint('❌ [JSON PARSE ERR]: $e');
+      }
       return [];
     }
   }
 
-  void _loadInitialSampleData() {
-    const rawTopicsJson = '''
-[
-  {
-    "tr": 1,
-    "title": "Sonli to'plamlar va ularning xossalari",
-    "soat": 4,
-    "tur": "Ma'ruza"
-  },
-  {
-    "tr": 2,
-    "title": "Pifagor teoremasi va geometrik ayniyatlar",
-    "soat": 6,
-    "tur": "Amaliy mashg'ulot"
-  },
-  {
-    "tr": 3,
-    "title": "Kvadrat tenglamalar va diskriminant usuli",
-    "soat": 8,
-    "tur": "Ma'ruza"
-  },
-  {
-    "tr": 4,
-    "title": "Trigonometrik funksiyalar va ayniyatlar",
-    "soat": 6,
-    "tur": "Laboratoriya"
-  }
-]
-''';
+  // PARSE EXCEL (.xlsx) FILE
+  // Uses standard decoder first, and falls back to Zip/XML parser for custom number format IDs
+  Map<String, dynamic> parseTopicsFromExcelBytes(Uint8List bytes) {
+    String extractedTitle = '';
+    final List<EduPlanTopicModel> topics = [];
 
-    final topics = parseTopicsFromJson(rawTopicsJson);
+    // Try 1: Standard Excel package decoder
+    try {
+      final excel = Excel.decodeBytes(bytes);
 
-    _eduPlans = [
-      EduPlanModel(
-        id: '6aa13b3d6ad50fd0eb448ce5',
-        name: 'Matematika fanidan o\'quv rejasi',
-        fanId: '6aa0f1d0e21b3be71d3be9d1',
-        kafedraId: '6aa0f20fe21b3be71d3be9d5',
-        oquvOyi: 'Sentyabr',
-        oquvYili: '2026-2027',
-        topics: topics,
-      ),
-    ];
+      for (final tableKey in excel.tables.keys) {
+        final table = excel.tables[tableKey];
+        if (table == null || table.rows.isEmpty) continue;
+
+        int trCol = -1;
+        int nameCol = -1;
+        int soatCol = -1;
+        int typeCol = -1;
+
+        for (int r = 0; r < table.rows.length; r++) {
+          final row = table.rows[r];
+          if (row.isEmpty) continue;
+
+          final rowText = row.map((c) => c?.value?.toString().trim() ?? '').join(' ');
+
+          if (extractedTitle.isEmpty && rowText.isNotEmpty && !rowText.toLowerCase().contains('t/r')) {
+            for (final cell in row) {
+              final val = cell?.value?.toString().trim() ?? '';
+              if (val.length > 5 && !val.toLowerCase().contains('t/r')) {
+                extractedTitle = val;
+                break;
+              }
+            }
+          }
+
+          if (trCol == -1) {
+            for (int c = 0; c < row.length; c++) {
+              final cellVal = row[c]?.value?.toString().trim().toLowerCase() ?? '';
+              if (cellVal.contains('t/r') || cellVal == 'tr' || cellVal == '№') {
+                trCol = c;
+              } else if (cellVal.contains('mavzu') || cellVal.contains('mazmuni') || cellVal.contains('nomi')) {
+                nameCol = c;
+              } else if (cellVal.contains('soat')) {
+                soatCol = c;
+              } else if (cellVal.contains('turi') || cellVal.contains('mashg‘ulot') || cellVal.contains('mashgulot')) {
+                typeCol = c;
+              }
+            }
+            if (trCol != -1) continue;
+          }
+
+          if (trCol != -1) {
+            final trValRaw = trCol < row.length ? row[trCol]?.value?.toString().trim() ?? '' : '';
+            final parsedTr = int.tryParse(trValRaw);
+
+            if (parsedTr != null) {
+              final nameVal = nameCol != -1 && nameCol < row.length ? row[nameCol]?.value?.toString().trim() ?? '' : '';
+              final soatValRaw = soatCol != -1 && soatCol < row.length ? row[soatCol]?.value?.toString().trim() ?? '' : '';
+              final parsedSoat = int.tryParse(soatValRaw) ?? 2;
+              final typeVal = typeCol != -1 && typeCol < row.length ? row[typeCol]?.value?.toString().trim() ?? '' : 'Amaliy';
+
+              if (nameVal.isNotEmpty) {
+                topics.add(
+                  EduPlanTopicModel(
+                    tr: parsedTr,
+                    name: nameVal,
+                    soat: parsedSoat,
+                    type: typeVal.isEmpty ? 'Amaliy' : typeVal,
+                  ),
+                );
+              }
+            }
+          }
+        }
+      }
+
+      if (topics.isNotEmpty) {
+        return {
+          'title': extractedTitle,
+          'topics': topics,
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ [EXCEL PACKAGE DECODER FAILED, SWITCHING TO ZIP/XML FALLBACK]: $e');
+      }
+    }
+
+    // Try 2: Fallback Zip / XML Spreadsheet Parser
+    try {
+      final zipResult = _parseXlsxViaZipXml(bytes);
+      return zipResult;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [ZIP/XML FALLBACK PARSER ERR]: $e');
+      }
+    }
+
+    return {
+      'title': extractedTitle,
+      'topics': topics,
+    };
   }
+
+  // ROBUST ZIP/XML FALLBACK PARSER FOR XLSX
+  Map<String, dynamic> _parseXlsxViaZipXml(Uint8List bytes) {
+    String extractedTitle = '';
+    final List<EduPlanTopicModel> topics = [];
+
+    final archive = ZipDecoder().decodeBytes(bytes);
+
+    // 1. Extract sharedStrings.xml
+    final List<String> sharedStrings = [];
+    final sharedStringsFile = archive.findFile('xl/sharedStrings.xml');
+    if (sharedStringsFile != null) {
+      final xmlContent = utf8.decode(sharedStringsFile.content as List<int>, allowMalformed: true);
+      final matches = RegExp(r'<t[^>]*>(.*?)</t>', dotAll: true).allMatches(xmlContent);
+      for (final m in matches) {
+        sharedStrings.add(_unescapeXml(m.group(1) ?? ''));
+      }
+    }
+
+    // 2. Find Sheet File
+    ArchiveFile? sheetFile;
+    for (final file in archive) {
+      if (file.name.startsWith('xl/worksheets/sheet') && file.name.endsWith('.xml')) {
+        sheetFile = file;
+        break;
+      }
+    }
+
+    if (sheetFile == null) return {'title': '', 'topics': []};
+
+    final sheetXml = utf8.decode(sheetFile.content as List<int>, allowMalformed: true);
+
+    // 3. Parse Rows and Cells
+    final rowRegExp = RegExp(r'<row[^>]*>(.*?)</row>', dotAll: true);
+    final cellRegExp = RegExp(r'<c\s+r="([A-Z]+)\d+"(?:\s+s="\d+")?(?:\s+t="([^"]+)")?[^>]*>(?:<v>(.*?)</v>|<is><t>(.*?)</t></is>)?', dotAll: true);
+
+    final rowMatches = rowRegExp.allMatches(sheetXml);
+
+    int trCol = -1;
+    int nameCol = -1;
+    int soatCol = -1;
+    int typeCol = -1;
+
+    for (final rMatch in rowMatches) {
+      final rowContent = rMatch.group(1) ?? '';
+      final Map<int, String> rowCells = {};
+
+      final cellMatches = cellRegExp.allMatches(rowContent);
+      for (final cMatch in cellMatches) {
+        final colLetters = cMatch.group(1) ?? 'A';
+        final typeAttr = cMatch.group(2) ?? '';
+        final valContent = cMatch.group(3) ?? '';
+        final inlineValContent = cMatch.group(4) ?? '';
+
+        final colIndex = _colLettersToIndex(colLetters);
+        String cellText = '';
+
+        if (typeAttr == 's') {
+          final strIndex = int.tryParse(valContent);
+          if (strIndex != null && strIndex >= 0 && strIndex < sharedStrings.length) {
+            cellText = sharedStrings[strIndex];
+          }
+        } else if (inlineValContent.isNotEmpty) {
+          cellText = _unescapeXml(inlineValContent);
+        } else {
+          cellText = _unescapeXml(valContent);
+        }
+
+        rowCells[colIndex] = cellText.trim();
+      }
+
+      if (rowCells.isEmpty) continue;
+
+      final fullRowText = rowCells.values.join(' ');
+
+      if (extractedTitle.isEmpty && fullRowText.isNotEmpty && !fullRowText.toLowerCase().contains('t/r')) {
+        for (final cellVal in rowCells.values) {
+          if (cellVal.length > 5 && !cellVal.toLowerCase().contains('t/r')) {
+            extractedTitle = cellVal;
+            break;
+          }
+        }
+      }
+
+      if (trCol == -1) {
+        for (final entry in rowCells.entries) {
+          final cellVal = entry.value.toLowerCase();
+          if (cellVal.contains('t/r') || cellVal == 'tr' || cellVal == '№') {
+            trCol = entry.key;
+          } else if (cellVal.contains('mavzu') || cellVal.contains('mazmuni') || cellVal.contains('nomi')) {
+            nameCol = entry.key;
+          } else if (cellVal.contains('soat')) {
+            soatCol = entry.key;
+          } else if (cellVal.contains('turi') || cellVal.contains('mashg‘ulot') || cellVal.contains('mashgulot')) {
+            typeCol = entry.key;
+          }
+        }
+        if (trCol != -1) continue;
+      }
+
+      if (trCol != -1) {
+        final trStr = rowCells[trCol] ?? '';
+        final parsedTr = int.tryParse(trStr);
+
+        if (parsedTr != null) {
+          final nameVal = rowCells[nameCol] ?? (rowCells[trCol + 1] ?? '');
+          final soatStr = rowCells[soatCol] ?? (rowCells[trCol + 2] ?? '2');
+          final parsedSoat = int.tryParse(soatStr) ?? 2;
+          final typeVal = rowCells[typeCol] ?? 'Amaliy';
+
+          if (nameVal.isNotEmpty) {
+            topics.add(
+              EduPlanTopicModel(
+                tr: parsedTr,
+                name: nameVal,
+                soat: parsedSoat,
+                type: typeVal.isEmpty ? 'Amaliy' : typeVal,
+              ),
+            );
+          }
+        }
+      }
+    }
+
+    return {
+      'title': extractedTitle,
+      'topics': topics,
+    };
+  }
+
+  int _colLettersToIndex(String col) {
+    int result = 0;
+    for (int i = 0; i < col.length; i++) {
+      result = result * 26 + (col.codeUnitAt(i) - 64);
+    }
+    return result - 1;
+  }
+
+  String _unescapeXml(String input) {
+    return input
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&apos;', "'")
+        .replaceAll('&amp;', '&');
+  }
+
+
 }

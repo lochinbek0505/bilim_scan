@@ -34,6 +34,7 @@ class ApiConfig {
   static const String eduPlans = '/edu-plans';
   static const String exams = '/exams';
   static const String examCreate = '/exams/create';
+  static const String studentMonitoring = '/analytics/monitoring/student';
 
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 15);

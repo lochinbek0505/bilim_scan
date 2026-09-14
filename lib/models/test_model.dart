@@ -1,3 +1,5 @@
+import 'edu_plan_model.dart';
+
 class OptionModel {
   final String text;
   final bool isTrue;
@@ -7,11 +9,18 @@ class OptionModel {
     required this.isTrue,
   });
 
-  factory OptionModel.fromJson(Map<String, dynamic> json) {
-    return OptionModel(
-      text: json['text'] as String? ?? '',
-      isTrue: json['isTrue'] as bool? ?? false,
-    );
+  factory OptionModel.fromJson(dynamic jsonInput) {
+    if (jsonInput is String) {
+      return OptionModel(text: jsonInput, isTrue: false);
+    }
+    if (jsonInput is Map) {
+      final map = jsonInput.map((key, value) => MapEntry(key.toString(), value));
+      return OptionModel(
+        text: (map['text'] ?? map['option'] ?? map['javob'] ?? map['name'] ?? '').toString(),
+        isTrue: map['isTrue'] == true || map['isCorrect'] == true || map['to_gri'] == true,
+      );
+    }
+    return OptionModel(text: jsonInput?.toString() ?? '', isTrue: false);
   }
 
   Map<String, dynamic> toJson() {
@@ -23,43 +32,104 @@ class OptionModel {
 }
 
 class QuestionModel {
+  final String id;
   final String title;
-  final String mavzu;
+  final EduPlanTopicModel? mavzu;
   final String type; // SINGLE_CHOICE, MULTIPLE_CHOICE, OPEN, WRITTEN
   final int tr;
   final List<int> relatedQuestionTrs;
+  final List<String> relatedQuestionIds;
   final List<OptionModel> options;
 
   QuestionModel({
+    this.id = '',
     required this.title,
-    required this.mavzu,
+    this.mavzu,
     required this.type,
     required this.tr,
     required this.relatedQuestionTrs,
+    this.relatedQuestionIds = const [],
     required this.options,
   });
 
-  factory QuestionModel.fromJson(Map<String, dynamic> json) {
+  factory QuestionModel.fromJson(dynamic jsonInput) {
+    Map<String, dynamic> json = {};
+    if (jsonInput is Map) {
+      json = jsonInput.map((key, value) => MapEntry(key.toString(), value));
+    }
+
+    EduPlanTopicModel? parsedMavzu;
+    final topicData = json['topic'] ?? json['mavzu'] ?? json['topicId'];
+    if (topicData != null) {
+      if (topicData is Map) {
+        parsedMavzu = EduPlanTopicModel.fromJson(topicData);
+      } else if (topicData is String) {
+        parsedMavzu = EduPlanTopicModel(
+          id: topicData,
+          tr: 1,
+          name: topicData,
+          soat: 2,
+          type: 'Amaliy',
+        );
+      }
+    }
+
+    List<int> parsedRelatedTrs = [];
+    if (json['relatedQuestionTrs'] != null && json['relatedQuestionTrs'] is List) {
+      for (var item in json['relatedQuestionTrs'] as List) {
+        if (item is int) {
+          parsedRelatedTrs.add(item);
+        } else if (item != null) {
+          final p = int.tryParse(item.toString());
+          if (p != null) parsedRelatedTrs.add(p);
+        }
+      }
+    }
+
+    List<String> parsedRelatedIds = [];
+    if (json['relatedQuestionIds'] != null && json['relatedQuestionIds'] is List) {
+      for (var item in json['relatedQuestionIds'] as List) {
+        if (item != null) parsedRelatedIds.add(item.toString());
+      }
+    }
+
+    List<OptionModel> parsedOptions = [];
+    final rawOptions = json['options'] ?? json['variantlar'] ?? json['answers'];
+    if (rawOptions != null && rawOptions is List) {
+      for (var e in rawOptions) {
+        if (e != null) {
+          parsedOptions.add(OptionModel.fromJson(e));
+        }
+      }
+    }
+
+    final rawTr = json['tr'] ?? json['t/r'] ?? json['order'];
+    int trVal = 1;
+    if (rawTr is int) {
+      trVal = rawTr;
+    } else if (rawTr != null) {
+      trVal = int.tryParse(rawTr.toString()) ?? 1;
+    }
+
+    final qId = (json['id'] ?? json['_id'] ?? json['questionId'] ?? 'q_$trVal').toString();
+
     return QuestionModel(
-      title: json['title'] as String? ?? '',
-      mavzu: json['mavzu'] as String? ?? '',
-      type: json['type'] as String? ?? 'SINGLE_CHOICE',
-      tr: json['tr'] as int? ?? 1,
-      relatedQuestionTrs: (json['relatedQuestionTrs'] as List<dynamic>?)
-              ?.map((e) => e as int)
-              .toList() ??
-          [],
-      options: (json['options'] as List<dynamic>?)
-              ?.map((e) => OptionModel.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      id: qId.isNotEmpty ? qId : 'q_$trVal',
+      title: (json['title'] ?? json['question'] ?? json['savol'] ?? json['name'] ?? '').toString(),
+      mavzu: parsedMavzu,
+      type: (json['type'] ?? json['questionType'] ?? 'SINGLE_CHOICE').toString().toUpperCase(),
+      tr: trVal,
+      relatedQuestionTrs: parsedRelatedTrs,
+      relatedQuestionIds: parsedRelatedIds,
+      options: parsedOptions,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'title': title,
-      'mavzu': mavzu,
+      'topicId': mavzu?.id ?? mavzu?.name ?? '',
       'type': type,
       'tr': tr,
       'relatedQuestionTrs': relatedQuestionTrs,
@@ -91,23 +161,39 @@ class TestModel {
     required this.questions,
   });
 
-  factory TestModel.fromJson(Map<String, dynamic> json) {
+  factory TestModel.fromJson(dynamic jsonInput) {
+    Map<String, dynamic> json = {};
+    if (jsonInput is Map) {
+      json = jsonInput.map((key, value) => MapEntry(key.toString(), value));
+    }
+
     List<QuestionModel> parsedQuestions = [];
-    if (json['questions'] != null) {
-      parsedQuestions = (json['questions'] as List<dynamic>)
-          .map((e) => QuestionModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+    final rawQuestions = json['questions'] ?? json['savollar'];
+    if (rawQuestions != null && rawQuestions is List) {
+      for (var e in rawQuestions) {
+        if (e != null) {
+          parsedQuestions.add(QuestionModel.fromJson(e));
+        }
+      }
+    }
+
+    final rawVaqt = json['ajratilganVaqt'] ?? json['durationMinutes'] ?? json['duration'];
+    int vaqt = 60;
+    if (rawVaqt is int) {
+      vaqt = rawVaqt;
+    } else if (rawVaqt != null) {
+      vaqt = int.tryParse(rawVaqt.toString()) ?? 60;
     }
 
     return TestModel(
-      id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      name: json['name'] as String? ?? '',
-      fanId: json['fanId'] as String? ?? '',
-      kafedraId: json['kafedraId'] as String? ?? '',
-      eduPlanId: json['eduPlanId'] as String? ?? '',
-      guruhId: json['guruhId'] as String? ?? '10-25-guruh',
-      oquvYili: json['oquvYili'] as String? ?? '2026-2027',
-      ajratilganVaqt: json['ajratilganVaqt'] as int? ?? 60,
+      id: (json['id'] ?? json['_id'] ?? DateTime.now().millisecondsSinceEpoch.toString()).toString(),
+      name: (json['name'] ?? '').toString(),
+      fanId: (json['fanId'] ?? '').toString(),
+      kafedraId: (json['kafedraId'] ?? '').toString(),
+      eduPlanId: (json['eduPlanId'] ?? '').toString(),
+      guruhId: (json['guruhId'] ?? '10-25-guruh').toString(),
+      oquvYili: (json['oquvYili'] ?? '2026-2027').toString(),
+      ajratilganVaqt: vaqt,
       questions: parsedQuestions,
     );
   }

@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../models/test_model.dart';
+import '../../models/edu_plan_model.dart';
 import '../../providers/test_provider.dart';
 
 class TestManagementScreen extends StatefulWidget {
@@ -206,7 +207,7 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
               _buildFilterDropdown(
                 hint: 'Guruh: Barchasi',
                 value: testProvider.selectedGuruhFilter,
-                items: testProvider.guruhlar.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)))).toList(),
+                items: testProvider.guruhlar.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)))).toList(),
                 onChanged: (val) => testProvider.setGuruhFilter(val),
               ),
             ],
@@ -266,6 +267,7 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
     final fanName = testProvider.fans[test.fanId] ?? test.fanId;
     final kafedraName = testProvider.kafedras[test.kafedraId] ?? test.kafedraId;
     final eduPlanName = testProvider.eduPlans[test.eduPlanId] ?? test.eduPlanId;
+    final guruhName = testProvider.guruhlar[test.guruhId] ?? test.guruhId;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -286,26 +288,40 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.goldPrimary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.goldPrimary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.assignment_turned_in_outlined, color: AppColors.goldPrimary, size: 22),
                     ),
-                    child: const Icon(Icons.assignment_turned_in_outlined, color: AppColors.goldPrimary, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(test.name, style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textPrimary)),
-                      const SizedBox(height: 2),
-                      Text('$kafedraName • $fanName', style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textMuted)),
-                    ],
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            test.name,
+                            style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textPrimary),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$kafedraName • $fanName',
+                            style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textMuted),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
               Row(
                 children: [
@@ -338,7 +354,7 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                   _buildBadge(Icons.timer_outlined, '${test.ajratilganVaqt} min', AppColors.goldPrimary),
                   _buildBadge(Icons.quiz_outlined, '${test.questions.length} ta savol', AppColors.emeraldAccent),
                   _buildBadge(Icons.calendar_month, 'Yil: ${test.oquvYili}', const Color(0xFF0EA5E9)),
-                  _buildBadge(Icons.groups_outlined, 'Guruh: ${test.guruhId}', const Color(0xFFA855F7)),
+                  _buildBadge(Icons.groups_outlined, 'Guruh: $guruhName', const Color(0xFFA855F7)),
                   _buildBadge(Icons.grid_view_outlined, eduPlanName, AppColors.info),
                 ],
               ),
@@ -381,15 +397,13 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
   void _showTestFormDialog(BuildContext context, TestModel? testToEdit) {
     final testProvider = Provider.of<TestProvider>(context, listen: false);
 
-    final nameController = TextEditingController(text: testToEdit?.name ?? '');
-    final vaqtController = TextEditingController(text: (testToEdit?.ajratilganVaqt ?? 60).toString());
-    final jsonImportController = TextEditingController();
+    
 
-    String selectedFanId = testToEdit?.fanId ?? testProvider.fans.keys.first;
-    String selectedKafedraId = testToEdit?.kafedraId ?? testProvider.kafedras.keys.first;
-    String selectedEduPlanId = testToEdit?.eduPlanId ?? testProvider.eduPlans.keys.first;
-    String selectedOquvYili = testToEdit?.oquvYili ?? testProvider.oquvYillari.first;
-    String selectedGuruh = testToEdit?.guruhId ?? testProvider.guruhlar.first;
+    String selectedFanId = testToEdit?.fanId ?? (testProvider.fans.isNotEmpty ? testProvider.fans.keys.first : '');
+    String selectedKafedraId = testToEdit?.kafedraId ?? (testProvider.kafedras.isNotEmpty ? testProvider.kafedras.keys.first : '');
+    String selectedEduPlanId = testToEdit?.eduPlanId ?? (testProvider.eduPlans.isNotEmpty ? testProvider.eduPlans.keys.first : '');
+    String selectedOquvYili = testToEdit?.oquvYili ?? (testProvider.oquvYillari.isNotEmpty ? testProvider.oquvYillari.first : '');
+    String selectedGuruh = testToEdit?.guruhId ?? (testProvider.guruhlar.isNotEmpty ? testProvider.guruhlar.keys.first : '');
 
     List<QuestionModel> currentQuestions = testToEdit != null ? List.from(testToEdit.questions) : [];
 
@@ -423,15 +437,6 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildFormLabel('TEST NOMI'),
-                    const SizedBox(height: 4),
-                    TextField(
-                      controller: nameController,
-                      style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
-                      decoration: _inputDecoration('Masalan: Matematika fanidan 1-oraliq nazorat'),
-                    ),
-                    const SizedBox(height: 14),
-
                     Row(
                       children: [
                         Expanded(
@@ -527,8 +532,8 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                                     value: selectedGuruh,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: testProvider.guruhlar.map((e) {
-                                      return DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
+                                    items: testProvider.guruhlar.entries.map((e) {
+                                      return DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
                                     }).toList(),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedGuruh = val);
@@ -570,22 +575,6 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildFormLabel('VAQT (DAQIQA)'),
-                              const SizedBox(height: 4),
-                              TextField(
-                                controller: vaqtController,
-                                keyboardType: TextInputType.number,
-                                style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
-                                decoration: _inputDecoration('60'),
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
 
@@ -593,11 +582,11 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                     const Divider(color: AppColors.cardBorder),
                     const SizedBox(height: 10),
 
-                    // JSON Questions Import Section with Native File Picker
+                    // DOCX Questions Import Section with Native File Picker
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildFormLabel('SAVOLLAR FAYLI (JSON IMPORT)'),
+                        _buildFormLabel('SAVOLLAR FAYLI (DOCX IMPORT)'),
                         Text('${currentQuestions.length} ta savol yuklangan', style: AppTextStyles.badgeText.copyWith(color: AppColors.emeraldAccent)),
                       ],
                     ),
@@ -605,31 +594,37 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
 
                     ElevatedButton.icon(
                       icon: const Icon(Icons.folder_open_outlined, size: 16),
-                      label: const Text('KOMPYUTERDAN JSON FAYLNI TANLASH (.json)'),
+                      label: const Text('KOMPYUTERDAN DOCX FAYLNI TANLASH (.docx)'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.goldPrimary,
                         foregroundColor: AppColors.backgroundDark,
                       ),
                       onPressed: () async {
                         try {
-                          final PlatformFile? file = await FilePicker.pickFile(
+                          final result = await FilePicker.pickFiles(
                             type: FileType.custom,
-                            allowedExtensions: ['json'],
+                            allowedExtensions: ['docx'],
                           );
 
-                          if (file != null) {
-                            String jsonContent = '';
-
+                          if (result.isNotEmpty) {
+                            final file = result.first;
+                            Uint8List bytes;
                             if (file.path != null && file.path!.isNotEmpty) {
-                              jsonContent = await File(file.path!).readAsString();
+                              bytes = await File(file.path!).readAsBytes();
                             } else {
-                              final bytes = await file.readAsBytes();
-                              jsonContent = utf8.decode(bytes);
+                              bytes = await file.readAsBytes();
                             }
 
-                            if (jsonContent.isNotEmpty) {
-                              jsonImportController.text = jsonContent;
-                              final parsed = testProvider.parseQuestionsFromJson(jsonContent);
+                            if (bytes.isNotEmpty) {
+                              EduPlanModel? selectedPlan;
+                              for (var p in testProvider.rawEduPlans) {
+                                if (p.id == selectedEduPlanId) {
+                                  selectedPlan = p;
+                                  break;
+                                }
+                              }
+
+                              final parsed = testProvider.parseQuestionsFromDocxBytes(bytes, selectedPlan?.topics);
                               if (parsed.isNotEmpty) {
                                 setModalState(() {
                                   currentQuestions = parsed;
@@ -637,6 +632,12 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text('✔ ${parsed.length} ta savol fayldan muvaffaqiyatli o\'qindi!'), backgroundColor: AppColors.emeraldAccent),
+                                  );
+                                }
+                              } else {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('DOCX fayldan savollar topilmadi yoku format xato!'), backgroundColor: AppColors.error),
                                   );
                                 }
                               }
@@ -652,52 +653,6 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                       },
                     ),
 
-                    const SizedBox(height: 8),
-
-                    TextField(
-                      controller: jsonImportController,
-                      maxLines: 4,
-                      style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textPrimary, fontFamily: 'monospace'),
-                      decoration: InputDecoration(
-                        hintText: 'Yoki JSON matnini bu yerga nusxalab joylashtiring...',
-                        hintStyle: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted),
-                        filled: true,
-                        fillColor: AppColors.inputBackground,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.cardBorder)),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.file_upload_outlined, size: 16),
-                      label: const Text('MATNNI PARSE QILISH'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.emeraldPrimary,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        final rawJson = jsonImportController.text.trim();
-                        if (rawJson.isNotEmpty) {
-                          final parsed = testProvider.parseQuestionsFromJson(rawJson);
-                          if (parsed.isNotEmpty) {
-                            setModalState(() {
-                              currentQuestions = parsed;
-                            });
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('${parsed.length} ta savol muvaffaqiyatli parse qilindi!'), backgroundColor: AppColors.emeraldAccent),
-                              );
-                            }
-                          } else {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('JSON formati noto\'g\'ri! Coder JSON formatini tekshiring.'), backgroundColor: AppColors.error),
-                              );
-                            }
-                          }
-                        }
-                      },
-                    ),
                   ],
                 ),
               ),
@@ -710,20 +665,19 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.goldPrimary, foregroundColor: AppColors.backgroundDark),
                 onPressed: () {
-                  final name = nameController.text.trim();
-                  final vaqt = int.tryParse(vaqtController.text.trim()) ?? 60;
-
-                  if (name.isEmpty) return;
+                  final fanName = testProvider.fans[selectedFanId] ?? selectedFanId;
+                  final guruhName = testProvider.guruhlar[selectedGuruh] ?? selectedGuruh;
+                  final generatedName = '$fanName fanidan $guruhName uchun $selectedOquvYili o\'quv yili testi';
 
                   final newTest = TestModel(
                     id: testToEdit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                    name: name,
+                    name: generatedName,
                     fanId: selectedFanId,
                     kafedraId: selectedKafedraId,
                     eduPlanId: selectedEduPlanId,
                     guruhId: selectedGuruh,
                     oquvYili: selectedOquvYili,
-                    ajratilganVaqt: vaqt,
+                    ajratilganVaqt: 60,
                     questions: currentQuestions,
                   );
 
@@ -746,6 +700,8 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
 
   // QUESTIONS INSPECTOR MODAL WITH MAVZU BADGE & LINKED QUESTIONS HIGHLIGHTING
   void _showQuestionsViewerModal(BuildContext context, TestModel test) {
+    final testProvider = Provider.of<TestProvider>(context, listen: false);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -755,20 +711,40 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
           children: [
             const Icon(Icons.quiz_outlined, color: AppColors.emeraldAccent),
             const SizedBox(width: 10),
-            Expanded(child: Text('${test.name} — SAVOLLAR RO\'YXATI (${test.questions.length} TA)', style: AppTextStyles.titleHeader.copyWith(fontSize: 15))),
+            Expanded(child: Text('${test.name} — SAVOLLAR RO\'YXATI', style: AppTextStyles.titleHeader.copyWith(fontSize: 15))),
           ],
         ),
         content: SizedBox(
           width: 640,
           height: 520,
-          child: test.questions.isEmpty
-              ? Center(child: Text('Hozircha savollar yuklanmagan.', style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted)))
-              : ListView.separated(
-                  itemCount: test.questions.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 14),
-                  itemBuilder: (context, index) {
-                    final q = test.questions[index];
-                    final hasRelatedQuestions = q.relatedQuestionTrs.isNotEmpty;
+          child: FutureBuilder<List<QuestionModel>>(
+            future: testProvider.fetchQuestionsForTest(test.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: AppColors.emeraldAccent),
+                      SizedBox(height: 12),
+                      Text('Savollar serverdan yuklanmoqda...', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                    ],
+                  ),
+                );
+              }
+
+              final questions = snapshot.data ?? (test.questions.isNotEmpty ? test.questions : []);
+
+              if (questions.isEmpty) {
+                return Center(child: Text('Hozircha savollar yuklanmagan.', style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted)));
+              }
+
+              return ListView.separated(
+                itemCount: questions.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 14),
+                itemBuilder: (context, index) {
+                  final q = questions[index];
+                  final hasRelatedQuestions = q.relatedQuestionTrs.isNotEmpty;
 
                     return Container(
                       padding: const EdgeInsets.all(14),
@@ -795,38 +771,50 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                children: [
-                                  // TR Badge
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.goldPrimary.withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(4),
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    // TR Badge
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.goldPrimary.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text('SAVOL #${q.tr}', style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.goldPrimary)),
                                     ),
-                                    child: Text('SAVOL #${q.tr}', style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.goldPrimary)),
-                                  ),
-                                  const SizedBox(width: 8),
+                                    const SizedBox(width: 8),
 
-                                  // MAVZU BADGE
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.emeraldPrimary.withValues(alpha: 0.25),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: AppColors.emeraldAccent.withValues(alpha: 0.4)),
+                                    // MAVZU BADGE
+                                    Flexible(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.emeraldPrimary.withValues(alpha: 0.25),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: AppColors.emeraldAccent.withValues(alpha: 0.4)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.menu_book, size: 12, color: AppColors.emeraldAccent),
+                                            const SizedBox(width: 4),
+                                            Flexible(
+                                              child: Text(
+                                                'Mavzu: ${q.mavzu?.name ?? "Noma'lum"}',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.emeraldAccent),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.menu_book, size: 12, color: AppColors.emeraldAccent),
-                                        const SizedBox(width: 4),
-                                        Text('Mavzu: ${q.mavzu}', style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.emeraldAccent)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
+                              const SizedBox(width: 8),
 
                               // TYPE BADGE
                               _buildQuestionTypeBadge(q.type),
@@ -890,7 +878,9 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                       ),
                     );
                   },
-                ),
+                );
+            },
+          ),
         ),
         actions: [
           ElevatedButton(

@@ -1,33 +1,55 @@
 class EduPlanTopicModel {
+  final String? id;
   final int tr;
-  final String title;
+  final String name;
   final int soat;
-  final String tur; // Ma'ruza, Amaliy mashg'ulot, Laboratoriya, Seminar
+  final String type; // Nazariy, Amaliy, Laboratoriya, Seminar
 
   EduPlanTopicModel({
+    this.id,
     required this.tr,
-    required this.title,
+    required this.name,
     required this.soat,
-    required this.tur,
+    required this.type,
   });
 
-  factory EduPlanTopicModel.fromJson(Map<String, dynamic> json) {
+  factory EduPlanTopicModel.fromJson(dynamic jsonInput) {
+    Map<String, dynamic> json = {};
+    if (jsonInput is Map) {
+      json = jsonInput.map((key, value) => MapEntry(key.toString(), value));
+    }
+
+    int parsedTr = 1;
+    if (json['tr'] != null) {
+      parsedTr = json['tr'] is int ? json['tr'] : int.tryParse(json['tr'].toString()) ?? 1;
+    } else if (json['t/r'] != null) {
+      parsedTr = json['t/r'] is int ? json['t/r'] : int.tryParse(json['t/r'].toString()) ?? 1;
+    }
+
+    int parsedSoat = 2;
+    if (json['soat'] != null) {
+      parsedSoat = json['soat'] is int ? json['soat'] : int.tryParse(json['soat'].toString()) ?? 2;
+    }
+
     return EduPlanTopicModel(
-      tr: json['tr'] as int? ?? 1,
-      title: json['title'] as String? ?? '',
-      soat: json['soat'] as int? ?? 2,
-      tur: json['tur'] as String? ?? 'Ma\'ruza',
+      id: json['id']?.toString(),
+      tr: parsedTr,
+      name: (json['name'] ?? json['title'])?.toString() ?? '',
+      soat: parsedSoat,
+      type: (json['type'] ?? json['tur'])?.toString() ?? 'Amaliy',
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toBulkRequestJson() {
     return {
-      'tr': tr,
-      'title': title,
+      't/r': tr,
+      'name': name,
       'soat': soat,
-      'tur': tur,
+      'type': type,
     };
   }
+
+  Map<String, dynamic> toJson() => toBulkRequestJson();
 }
 
 class EduPlanModel {
@@ -35,7 +57,6 @@ class EduPlanModel {
   final String name;
   final String fanId;
   final String kafedraId;
-  final String oquvOyi;
   final String oquvYili;
   final List<EduPlanTopicModel> topics;
 
@@ -44,28 +65,43 @@ class EduPlanModel {
     required this.name,
     required this.fanId,
     required this.kafedraId,
-    required this.oquvOyi,
     required this.oquvYili,
     required this.topics,
   });
 
-  factory EduPlanModel.fromJson(Map<String, dynamic> json) {
+  factory EduPlanModel.fromJson(dynamic jsonInput) {
+    Map<String, dynamic> json = {};
+    if (jsonInput is Map) {
+      json = jsonInput.map((key, value) => MapEntry(key.toString(), value));
+    }
+
     List<EduPlanTopicModel> parsedTopics = [];
-    if (json['topics'] != null) {
-      parsedTopics = (json['topics'] as List<dynamic>)
-          .map((e) => EduPlanTopicModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+    if (json['topics'] != null && json['topics'] is List) {
+      for (var e in json['topics'] as List) {
+        if (e != null) {
+          parsedTopics.add(EduPlanTopicModel.fromJson(e));
+        }
+      }
     }
 
     return EduPlanModel(
-      id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      name: json['name'] as String? ?? '',
-      fanId: json['fanId'] as String? ?? '',
-      kafedraId: json['kafedraId'] as String? ?? '',
-      oquvOyi: json['oquvOyi'] as String? ?? 'Sentyabr',
-      oquvYili: json['oquvYili'] as String? ?? '2026-2027',
+      id: (json['id'] ?? json['_id'] ?? DateTime.now().millisecondsSinceEpoch.toString()).toString(),
+      name: (json['name'] ?? '').toString(),
+      fanId: (json['fanId'] ?? '').toString(),
+      kafedraId: (json['kafedraId'] ?? '').toString(),
+      oquvYili: (json['oquvYili'] ?? '2025-2026').toString(),
       topics: parsedTopics,
     );
+  }
+
+  // Payload for POST /api/edu-plans (EduPlanRequestDto)
+  Map<String, dynamic> toRequestDtoJson() {
+    return {
+      'name': name,
+      'fanId': fanId,
+      'kafedraId': kafedraId,
+      'oquvYili': oquvYili,
+    };
   }
 
   Map<String, dynamic> toJson() {
@@ -74,9 +110,8 @@ class EduPlanModel {
       'name': name,
       'fanId': fanId,
       'kafedraId': kafedraId,
-      'oquvOyi': oquvOyi,
       'oquvYili': oquvYili,
-      'topics': topics.map((e) => e.toJson()).toList(),
+      'topics': topics.map((e) => e.toBulkRequestJson()).toList(),
     };
   }
 
@@ -85,7 +120,6 @@ class EduPlanModel {
     String? name,
     String? fanId,
     String? kafedraId,
-    String? oquvOyi,
     String? oquvYili,
     List<EduPlanTopicModel>? topics,
   }) {
@@ -94,7 +128,6 @@ class EduPlanModel {
       name: name ?? this.name,
       fanId: fanId ?? this.fanId,
       kafedraId: kafedraId ?? this.kafedraId,
-      oquvOyi: oquvOyi ?? this.oquvOyi,
       oquvYili: oquvYili ?? this.oquvYili,
       topics: topics ?? this.topics,
     );

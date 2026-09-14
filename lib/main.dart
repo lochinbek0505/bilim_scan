@@ -7,6 +7,7 @@ import 'providers/edu_plan_provider.dart';
 import 'providers/exam_provider.dart';
 import 'providers/catalog_provider.dart';
 import 'providers/user_provider.dart';
+import 'providers/student_exam_provider.dart';
 import 'screens/splash/splash_screen.dart';
 import 'screens/login/login_screen.dart';
 
@@ -43,6 +44,7 @@ class BilimScanApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ExamProvider()),
         ChangeNotifierProvider(create: (_) => CatalogProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => StudentExamProvider()),
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,

@@ -6,6 +6,8 @@ import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../providers/auth_provider.dart';
 import '../home/home_screen.dart';
+import '../student/student_dashboard_screen.dart';
+import 'student_login_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -566,11 +568,19 @@ class _LoginScreenState extends State<LoginScreen>
                       : () async {
                           final success = await authProvider.login();
                           if (success && context.mounted) {
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                builder: (context) => const HomeScreen(),
-                              ),
-                            );
+                            if (authProvider.selectedRole == UserRole.user ){
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (context) => const HomeScreen(),
+                                ),
+                              );
+                            } else {
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (context) => const HomeScreen(),
+                                ),
+                              );
+                            }
                           }
                         },
                   style: ElevatedButton.styleFrom(
@@ -620,7 +630,22 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton.icon(
+                  icon: const Icon(Icons.school_outlined, size: 16, color: AppColors.emeraldAccent),
+                  label: Text(
+                    'O\'quvchilar uchun alohida kirish sahifasi',
+                    style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.emeraldAccent),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => const StudentLoginScreen()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
 
               // Bottom Footer
               Center(
@@ -642,9 +667,9 @@ class _LoginScreenState extends State<LoginScreen>
 
   IconData _getRoleIcon(UserRole role) {
     switch (role) {
-      case UserRole.kursant:
+      case UserRole.user:
         return Icons.school_outlined;
-      case UserRole.oqituvchi:
+      case UserRole.teacher:
         return Icons.person_pin_outlined;
       case UserRole.admin:
         return Icons.admin_panel_settings_outlined;
