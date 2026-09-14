@@ -20,11 +20,14 @@ class StudentExamProvider extends ChangeNotifier {
   ExamResultResponse? get lastResult => _lastResult;
   Map<String, List<String>> get userAnswers => _userAnswers;
 
-  Future<void> fetchExams() async {
+  Future<void> fetchExams({String? studentId, String? guruhId}) async {
     _isLoading = true;
     notifyListeners();
 
-    final result = await _service.getExams();
+    final result = await _service.getExams(
+      studentId: studentId,
+      guruhId: guruhId,
+    );
     _exams = result;
 
     _isLoading = false;

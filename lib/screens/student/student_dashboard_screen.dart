@@ -24,8 +24,29 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<StudentExamProvider>().fetchExams();
+      _refreshExams();
     });
+  }
+
+  void _refreshExams() {
+    final authProvider = context.read<AuthProvider>();
+    final user = authProvider.currentUserModel?.user;
+
+    final studentId = user?.id ?? '6aa046d379b786309791f3a7';
+
+    String guruhId = '6aa0f1e7e21b3be71d3be9d3';
+    if (user != null) {
+      if (user.guruh is Map) {
+        guruhId = (user.guruh['id'] ?? user.guruh['_id'] ?? user.guruh['guruhId'] ?? guruhId).toString();
+      } else if (user.guruh is String && (user.guruh as String).isNotEmpty) {
+        guruhId = user.guruh as String;
+      }
+    }
+
+    context.read<StudentExamProvider>().fetchExams(
+      studentId: studentId,
+      guruhId: guruhId,
+    );
   }
 
   Future<void> _handleStartExam(ExamSessionModel exam, String studentId) async {
@@ -101,7 +122,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             IconButton(
               icon: const Icon(Icons.refresh, color: AppColors.goldPrimary),
               tooltip: 'Imtihonlarni yangilash',
-              onPressed: () => context.read<StudentExamProvider>().fetchExams(),
+              onPressed: _refreshExams,
             ),
             IconButton(
               icon: const Icon(Icons.logout, color: AppColors.error),
@@ -257,6 +278,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     final bosqichName = exam.guruh?.bosqich?.name ?? '';
     final isStartingThisExam = _startingExamId == exam.id;
     final isAnyExamStarting = _startingExamId != null;
+    final hasAttemptsRemaining = exam.remainingAttempts > 0;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -317,17 +339,19 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.backgroundDark),
                       )
-                    : const Icon(Icons.play_arrow, size: 18),
+                    : Icon(hasAttemptsRemaining ? Icons.play_arrow : Icons.block, size: 18),
                 label: Text(
-                  isStartingThisExam ? 'YUKLANMOQDA...' : 'TESTNI BOSHLASH',
+                  isStartingThisExam
+                      ? 'YUKLANMOQDA...'
+                      : (hasAttemptsRemaining ? 'TESTNI BOSHLASH' : 'URINISHLAR TUGAGAN'),
                   style: AppTextStyles.buttonText.copyWith(fontSize: 12),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.emeraldAccent,
-                  foregroundColor: AppColors.backgroundDark,
+                  backgroundColor: hasAttemptsRemaining ? AppColors.emeraldAccent : AppColors.cardBorder,
+                  foregroundColor: hasAttemptsRemaining ? AppColors.backgroundDark : AppColors.textMuted,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
-                onPressed: isAnyExamStarting ? null : () => _handleStartExam(exam, studentId),
+                onPressed: (isAnyExamStarting || !hasAttemptsRemaining) ? null : () => _handleStartExam(exam, studentId),
               ),
             ],
           ),
@@ -341,7 +365,11 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             children: [
               _buildBadge(Icons.timer_outlined, 'Vaqt: ${exam.durationMinutes} daqiqa', AppColors.goldPrimary),
               _buildBadge(Icons.help_outline, 'Savollar: ${exam.questionCount} ta', AppColors.emeraldAccent),
-              _buildBadge(Icons.replay, 'Urinishlar: ${exam.maxAttempts} ta', const Color(0xFF0EA5E9)),
+              _buildBadge(
+                Icons.replay,
+                'Urinishlar: ${exam.usedAttempts}/${exam.maxAttempts} (Qoldi: ${exam.remainingAttempts})',
+                hasAttemptsRemaining ? const Color(0xFF0EA5E9) : AppColors.error,
+              ),
             ],
           ),
         ],

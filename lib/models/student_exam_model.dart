@@ -1,32 +1,39 @@
 import 'guruh_model.dart';
 import 'test_model.dart';
 
-class ExamSessionModel {
+class StudentAvailableExamDto {
   final String id;
   final String? name;
-  final String? test; // testId
-  final GuruhModel? guruh;
-  final int durationMinutes;
-  final int questionCount;
-  final int maxAttempts;
-  final bool active;
+  final String? test; // testId or test name
   final String? startTime;
   final String? endTime;
+  final int durationMinutes;
+  final int questionCount;
 
-  ExamSessionModel({
+  // Urinishlar bo'yicha ma'lumotlar
+  final int maxAttempts;
+  final int usedAttempts;
+  final int remainingAttempts;
+
+  final GuruhModel? guruh;
+  final bool active;
+
+  StudentAvailableExamDto({
     required this.id,
     this.name,
     this.test,
-    this.guruh,
+    this.startTime,
+    this.endTime,
     required this.durationMinutes,
     required this.questionCount,
     required this.maxAttempts,
-    required this.active,
-    this.startTime,
-    this.endTime,
+    this.usedAttempts = 0,
+    this.remainingAttempts = 1,
+    this.guruh,
+    this.active = true,
   });
 
-  factory ExamSessionModel.fromJson(dynamic jsonInput) {
+  factory StudentAvailableExamDto.fromJson(dynamic jsonInput) {
     Map<String, dynamic> json = {};
     if (jsonInput is Map) {
       json = jsonInput.map((key, value) => MapEntry(key.toString(), value));
@@ -56,20 +63,57 @@ class ExamSessionModel {
       attempts = int.tryParse(rawMaxAttempts.toString()) ?? 1;
     }
 
-    return ExamSessionModel(
+    final rawUsedAttempts = json['usedAttempts'];
+    int used = 0;
+    if (rawUsedAttempts is int) {
+      used = rawUsedAttempts;
+    } else if (rawUsedAttempts != null) {
+      used = int.tryParse(rawUsedAttempts.toString()) ?? 0;
+    }
+
+    final rawRemainingAttempts = json['remainingAttempts'];
+    int remaining = attempts - used;
+    if (rawRemainingAttempts is int) {
+      remaining = rawRemainingAttempts;
+    } else if (rawRemainingAttempts != null) {
+      remaining = int.tryParse(rawRemainingAttempts.toString()) ?? remaining;
+    }
+
+    return StudentAvailableExamDto(
       id: (json['id'] ?? json['_id'] ?? '').toString(),
       name: json['name']?.toString(),
-      test: json['test'] is String ? json['test'] as String : json['test']?['id']?.toString(),
+      test: json['test'] is String ? json['test'] as String : json['test']?['name']?.toString() ?? json['test']?['id']?.toString(),
       guruh: json['guruh'] != null ? GuruhModel.fromJson(json['guruh']) : null,
       durationMinutes: duration > 0 ? duration : 20,
       questionCount: qCount,
       maxAttempts: attempts,
+      usedAttempts: used,
+      remainingAttempts: remaining < 0 ? 0 : remaining,
       active: json['active'] as bool? ?? true,
       startTime: json['startTime']?.toString(),
       endTime: json['endTime']?.toString(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'test': test,
+      'startTime': startTime,
+      'endTime': endTime,
+      'durationMinutes': durationMinutes,
+      'questionCount': questionCount,
+      'maxAttempts': maxAttempts,
+      'usedAttempts': usedAttempts,
+      'remainingAttempts': remainingAttempts,
+      if (guruh != null) 'guruh': guruh?.toJson(),
+      'active': active,
+    };
+  }
 }
+
+typedef ExamSessionModel = StudentAvailableExamDto;
 
 class StartedExamResponse {
   final String studentExamId;

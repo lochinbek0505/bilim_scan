@@ -19,14 +19,27 @@ class StudentExamService {
     return data;
   }
 
-  /// GET /api/exams
-  Future<List<ExamSessionModel>> getExams() async {
+  /// GET /api/exams/student/{studentId}/guruh/{guruhId}
+  Future<List<StudentAvailableExamDto>> getExams({
+    String? studentId,
+    String? guruhId,
+  }) async {
     try {
-      final response = await _apiService.dio.get(ApiConfig.exams);
+      final sId = (studentId != null && studentId.trim().isNotEmpty)
+          ? studentId.trim()
+          : '6aa046d379b786309791f3a7';
+      final gId = (guruhId != null && guruhId.trim().isNotEmpty)
+          ? guruhId.trim()
+          : '6aa0f1e7e21b3be71d3be9d3';
+
+      final endpoint = '${ApiConfig.exams}/student/$sId/guruh/$gId';
+      final response = await _apiService.dio.get(endpoint);
       if (response.statusCode == 200 && response.data != null) {
         final parsed = _parseResponseBody(response.data);
-        final List<dynamic> list = parsed is List ? parsed : (parsed is Map && parsed['data'] is List ? parsed['data'] : []);
-        return list.map((e) => ExamSessionModel.fromJson(e)).toList();
+        final List<dynamic> list = parsed is List
+            ? parsed
+            : (parsed is Map && parsed['data'] is List ? parsed['data'] : []);
+        return list.map((e) => StudentAvailableExamDto.fromJson(e)).toList();
       }
     } catch (e) {
       if (kDebugMode) debugPrint('❌ [STUDENT EXAM GET ERR]: $e');
