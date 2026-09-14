@@ -153,23 +153,32 @@ class EduPlanProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    await _service.updateEduPlan(plan);
+    final success = await _service.updateEduPlan(plan);
 
-    final index = _eduPlans.indexWhere((p) => p.id == plan.id);
-    if (index != -1) {
-      _eduPlans[index] = plan;
+    if (success) {
+      final index = _eduPlans.indexWhere((p) => p.id == plan.id);
+      if (index != -1) {
+        _eduPlans[index] = plan;
+      }
     }
 
     _isLoading = false;
     notifyListeners();
-    return true;
+    return success;
   }
 
   Future<bool> deleteEduPlan(String id) async {
-    await _service.deleteEduPlan(id);
-    _eduPlans.removeWhere((p) => p.id == id);
+    _isLoading = true;
     notifyListeners();
-    return true;
+
+    final success = await _service.deleteEduPlan(id);
+    if (success) {
+      _eduPlans.removeWhere((p) => p.id == id);
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return success;
   }
 
   // Parse topics list from JSON string content

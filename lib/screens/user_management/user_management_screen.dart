@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
@@ -862,44 +863,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
                     const SizedBox(height: 14),
 
-                    // LOGIN & PASSWORD ROW
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildFormLabel('LOGIN (USERNAME)'),
-                              const SizedBox(height: 4),
-                              TextField(
-                                controller: usernameController,
-                                style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
-                                decoration: _inputDecoration('Masalan: student_1025'),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildFormLabel('PAROL (PASSWORD)'),
-                              const SizedBox(height: 4),
-                              TextField(
-                                controller: passwordController,
-                                obscureText: true,
-                                style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
-                                decoration: _inputDecoration(userToEdit == null ? '••••••••' : 'O\'zgarmaydi (ixtiyoriy)'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 14),
-
                     // FULL NAME FIELDS
                     Row(
                       children: [
@@ -943,6 +906,173 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       controller: patronymicController,
                       style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
                       decoration: _inputDecoration('Baxrullaevich'),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // AUTO-GENERATOR & COPY TOOLBAR
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.inputBackground,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.goldPrimary.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.auto_awesome, size: 16),
+                              label: const Text('⚡ F.I.O DAN GENERATSIYA QILISH'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.goldPrimary,
+                                foregroundColor: AppColors.backgroundDark,
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                              ),
+                              onPressed: () {
+                                String clean(String str) {
+                                  return str.trim().toLowerCase()
+                                      .replaceAll('ʻ', '')
+                                      .replaceAll("'", '')
+                                      .replaceAll('`', '')
+                                      .replaceAll(' ', '_');
+                                }
+
+                                final fn = clean(firstNameController.text);
+                                final ln = clean(lastNameController.text);
+
+                                if (fn.isEmpty && ln.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('⚠️ Iltimos, oldin Ismi va Familiyasini kiriting!'),
+                                      backgroundColor: AppColors.warning,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                String genUsername = '';
+                                if (fn.isNotEmpty && ln.isNotEmpty) {
+                                  genUsername = '${fn}_$ln';
+                                } else if (ln.isNotEmpty) {
+                                  genUsername = ln;
+                                } else {
+                                  genUsername = fn;
+                                }
+
+                                final randomPin = (100000 + DateTime.now().microsecondsSinceEpoch % 900000);
+                                final fnCap = fn.isNotEmpty ? fn[0].toUpperCase() + fn.substring(1) : 'User';
+                                final genPassword = '$fnCap@$randomPin';
+
+                                setModalState(() {
+                                  usernameController.text = genUsername;
+                                  passwordController.text = genPassword;
+                                });
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('⚡ Generatsiya qilindi: $genUsername / $genPassword'),
+                                    backgroundColor: AppColors.emeraldAccent,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.copy, size: 16),
+                            label: const Text('📋 NUSXALASH'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.emeraldAccent,
+                              side: const BorderSide(color: AppColors.emeraldAccent),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                            onPressed: () {
+                              final u = usernameController.text.trim();
+                              final p = passwordController.text.trim();
+                              if (u.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('⚠️ Username hali kiritilmagan!'), backgroundColor: AppColors.warning),
+                                );
+                                return;
+                              }
+                              final textToCopy = 'Login: $u\nParol: $p';
+                              Clipboard.setData(ClipboardData(text: textToCopy));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('✔ Nusxalandi:\n$textToCopy'),
+                                  backgroundColor: AppColors.emeraldAccent,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // LOGIN & PASSWORD ROW WITH COPY SUFFIX ICONS
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildFormLabel('LOGIN (USERNAME)'),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: usernameController,
+                                style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
+                                decoration: _inputDecoration(
+                                  'Masalan: daler_narzullaev',
+                                  suffixIcon: IconButton(
+                                    icon: const Icon(Icons.copy, size: 16, color: AppColors.goldPrimary),
+                                    tooltip: 'Username\'ni nusxalash',
+                                    onPressed: () {
+                                      if (usernameController.text.isNotEmpty) {
+                                        Clipboard.setData(ClipboardData(text: usernameController.text));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('✔ Username nusxalandi!'), backgroundColor: AppColors.goldPrimary),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildFormLabel('PAROL (PASSWORD)'),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: passwordController,
+                                style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
+                                decoration: _inputDecoration(
+                                  userToEdit == null ? '••••••••' : 'O\'zgarmaydi (ixtiyoriy)',
+                                  suffixIcon: IconButton(
+                                    icon: const Icon(Icons.copy, size: 16, color: AppColors.goldPrimary),
+                                    tooltip: 'Parolni nusxalash',
+                                    onPressed: () {
+                                      if (passwordController.text.isNotEmpty) {
+                                        Clipboard.setData(ClipboardData(text: passwordController.text));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('✔ Parol nusxalandi!'), backgroundColor: AppColors.goldPrimary),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
 
                     // CASCADING DROPDOWNS FOR USER (O'QUVCHI -> BOSQICH & GURUH)
@@ -1173,12 +1303,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     return Text(label, style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.textSecondary));
   }
 
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _inputDecoration(String hint, {Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hint,
       hintStyle: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textMuted),
       filled: true,
       fillColor: AppColors.inputBackground,
+      suffixIcon: suffixIcon,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.cardBorder)),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.goldPrimary)),

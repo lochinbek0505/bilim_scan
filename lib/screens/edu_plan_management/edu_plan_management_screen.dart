@@ -202,21 +202,30 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
     required List<DropdownMenuItem<String>> items,
     required ValueChanged<String?> onChanged,
   }) {
+    final Map<String, DropdownMenuItem<String>> uniqueMap = {};
+    for (var item in items) {
+      if (item.value != null && item.value!.isNotEmpty) {
+        uniqueMap[item.value!] = item;
+      }
+    }
+    final cleanItems = uniqueMap.values.toList();
+    final validValue = cleanItems.any((i) => i.value == value) ? value : null;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: AppColors.inputBackground,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: value != null ? const Color(0xFF14B8A6) : AppColors.cardBorder),
+        border: Border.all(color: validValue != null ? const Color(0xFF14B8A6) : AppColors.cardBorder),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
-          value: value,
+          value: validValue,
           dropdownColor: AppColors.cardDark,
           hint: Text(hint, style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 12)),
           items: [
             DropdownMenuItem<String?>(value: null, child: Text('$hint (Barchasi)', style: const TextStyle(color: AppColors.textMuted, fontSize: 12))),
-            ...items,
+            ...cleanItems.map((i) => DropdownMenuItem<String?>(value: i.value, child: i.child)),
           ],
           onChanged: onChanged,
         ),
@@ -356,14 +365,51 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
     final catalogProvider = Provider.of<CatalogProvider>(context, listen: false);
 
     final nameController = TextEditingController(text: planToEdit?.name ?? '');
-    String selectedOquvYili = planToEdit?.oquvYili ?? (eduPlanProvider.oquvYillari.isNotEmpty ? eduPlanProvider.oquvYillari.first : '2025-2026');
     final jsonImportController = TextEditingController();
 
-    String selectedFanId = planToEdit?.fanId ??
-        (catalogProvider.fanlar.isNotEmpty ? catalogProvider.fanlar.first.id! : eduPlanProvider.fans.keys.first);
+    List<DropdownMenuItem<String>> buildUniqueFanItems() {
+      final Map<String, String> itemMap = {};
+      for (var f in catalogProvider.fanlar) {
+        if (f.id != null && f.id!.isNotEmpty) {
+          itemMap[f.id!] = f.name ?? 'Fan';
+        }
+      }
+      for (var entry in eduPlanProvider.fans.entries) {
+        if (entry.key.isNotEmpty && !itemMap.containsKey(entry.key)) {
+          itemMap[entry.key] = entry.value;
+        }
+      }
+      return itemMap.entries.map((e) {
+        return DropdownMenuItem<String>(
+          value: e.key,
+          child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+        );
+      }).toList();
+    }
 
-    String selectedKafedraId = planToEdit?.kafedraId ??
-        (catalogProvider.kafedralar.isNotEmpty ? catalogProvider.kafedralar.first.id! : eduPlanProvider.kafedras.keys.first);
+    List<DropdownMenuItem<String>> buildUniqueKafedraItems() {
+      final Map<String, String> itemMap = {};
+      for (var k in catalogProvider.kafedralar) {
+        if (k.id != null && k.id!.isNotEmpty) {
+          itemMap[k.id!] = k.name ?? 'Kafedra';
+        }
+      }
+      for (var entry in eduPlanProvider.kafedras.entries) {
+        if (entry.key.isNotEmpty && !itemMap.containsKey(entry.key)) {
+          itemMap[entry.key] = entry.value;
+        }
+      }
+      return itemMap.entries.map((e) {
+        return DropdownMenuItem<String>(
+          value: e.key,
+          child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+        );
+      }).toList();
+    }
+
+    String? selectedFanId = planToEdit?.fanId;
+    String? selectedKafedraId = planToEdit?.kafedraId;
+    String? selectedOquvYili = planToEdit?.oquvYili;
 
     List<EduPlanTopicModel> currentTopics = planToEdit != null ? List.from(planToEdit.topics) : [];
 
@@ -371,6 +417,27 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setModalState) {
+          final fanItems = buildUniqueFanItems();
+          final fanValue = fanItems.any((i) => i.value == selectedFanId)
+              ? selectedFanId
+              : (fanItems.isNotEmpty ? fanItems.first.value : null);
+
+          final kafedraItems = buildUniqueKafedraItems();
+          final kafedraValue = kafedraItems.any((i) => i.value == selectedKafedraId)
+              ? selectedKafedraId
+              : (kafedraItems.isNotEmpty ? kafedraItems.first.value : null);
+
+          final oquvYiliItems = eduPlanProvider.oquvYillari.map((val) {
+            return DropdownMenuItem<String>(
+              value: val,
+              child: Text(val, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+            );
+          }).toList();
+
+          final oquvYiliValue = oquvYiliItems.any((i) => i.value == selectedOquvYili)
+              ? selectedOquvYili
+              : (oquvYiliItems.isNotEmpty ? oquvYiliItems.first.value : null);
+
           return AlertDialog(
             backgroundColor: AppColors.cardDark,
             shape: RoundedRectangleBorder(
@@ -417,17 +484,12 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: selectedFanId,
+                                  child: DropdownButton<String?>(
+                                    value: fanValue,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: catalogProvider.fanlar.map((f) {
-                                      return DropdownMenuItem<String>(value: f.id!, child: Text(f.name ?? 'Fan', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
-                                    }).toList()..addAll(
-                                      eduPlanProvider.fans.entries.where((e) => !catalogProvider.fanlar.any((f) => f.id == e.key)).map((e) {
-                                        return DropdownMenuItem<String>(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
-                                      })
-                                    ),
+                                    hint: const Text('Fanni tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                                    items: fanItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedFanId = val);
                                     },
@@ -448,17 +510,12 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: selectedKafedraId,
+                                  child: DropdownButton<String?>(
+                                    value: kafedraValue,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: catalogProvider.kafedralar.map((k) {
-                                      return DropdownMenuItem<String>(value: k.id!, child: Text(k.name ?? 'Kafedra', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
-                                    }).toList()..addAll(
-                                      eduPlanProvider.kafedras.entries.where((e) => !catalogProvider.kafedralar.any((k) => k.id == e.key)).map((e) {
-                                        return DropdownMenuItem<String>(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
-                                      })
-                                    ),
+                                    hint: const Text('Kafedrani tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                                    items: kafedraItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedKafedraId = val);
                                     },
@@ -477,16 +534,12 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                     const SizedBox(height: 4),
                     _buildDropdownContainer(
                       child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: eduPlanProvider.oquvYillari.contains(selectedOquvYili) ? selectedOquvYili : (eduPlanProvider.oquvYillari.isNotEmpty ? eduPlanProvider.oquvYillari.first : '2025-2026'),
+                        child: DropdownButton<String?>(
+                          value: oquvYiliValue,
                           dropdownColor: AppColors.cardDark,
                           isExpanded: true,
-                          items: eduPlanProvider.oquvYillari.map((val) {
-                            return DropdownMenuItem<String>(
-                              value: val,
-                              child: Text(val, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-                            );
-                          }).toList(),
+                          hint: const Text('O\'quv yilini tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                          items: oquvYiliItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
                           onChanged: (val) {
                             if (val != null) {
                               setModalState(() => selectedOquvYili = val);
@@ -644,19 +697,37 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                   final newPlan = EduPlanModel(
                     id: planToEdit?.id ?? '',
                     name: name,
-                    fanId: selectedFanId,
-                    kafedraId: selectedKafedraId,
-                    oquvYili: selectedOquvYili,
+                    fanId: selectedFanId ?? '',
+                    kafedraId: selectedKafedraId ?? '',
+                    oquvYili: selectedOquvYili ?? '',
                     topics: currentTopics,
                   );
 
+                  bool success = false;
                   if (planToEdit == null) {
-                    await eduPlanProvider.createEduPlan(newPlan);
+                    success = await eduPlanProvider.createEduPlan(newPlan);
                   } else {
-                    await eduPlanProvider.updateEduPlan(newPlan);
+                    success = await eduPlanProvider.updateEduPlan(newPlan);
                   }
 
-                  if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(planToEdit == null ? '✔ O\'quv reja muvaffaqiyatli yaratildi!' : '✔ O\'quv reja muvaffaqiyatli yangilandi!'),
+                          backgroundColor: const Color(0xFF14B8A6),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('❌ O\'quv rejasini saqlashda xatolik yuz berdi!'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  }
                 },
                 child: Text(planToEdit == null ? 'YARATISH' : 'SAQLASH'),
               ),
@@ -736,17 +807,34 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
   void _confirmDeleteDialog(BuildContext context, String id, EduPlanProvider provider) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         backgroundColor: AppColors.cardDark,
         title: Text('O\'QUV REJANI O\'CHIRISH', style: AppTextStyles.titleHeader.copyWith(color: AppColors.error)),
         content: Text('Haqiqatan ham ushbu o\'quv rejani o\'chirib tashlamoqchimisiz?', style: AppTextStyles.bodyText),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('BEKOR QILISH')),
+          TextButton(onPressed: () => Navigator.of(dialogCtx).pop(), child: const Text('BEKOR QILISH')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
-              await provider.deleteEduPlan(id);
-              if (context.mounted) Navigator.of(context).pop();
+              final success = await provider.deleteEduPlan(id);
+              if (dialogCtx.mounted) {
+                Navigator.of(dialogCtx).pop();
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✔ O\'quv reja muvaffaqiyatli o\'chirildi!'),
+                      backgroundColor: Color(0xFF14B8A6),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('❌ O\'quv rejasini o\'chirishda xatolik yuz berdi!'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text('O\'CHIRISH'),
           ),

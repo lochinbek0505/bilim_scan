@@ -223,16 +223,25 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
     required List<DropdownMenuItem<String>> items,
     required ValueChanged<String?> onChanged,
   }) {
+    final Map<String, DropdownMenuItem<String>> uniqueMap = {};
+    for (var item in items) {
+      if (item.value != null && item.value!.isNotEmpty) {
+        uniqueMap[item.value!] = item;
+      }
+    }
+    final cleanItems = uniqueMap.values.toList();
+    final validValue = cleanItems.any((i) => i.value == value) ? value : null;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: AppColors.inputBackground,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: value != null ? AppColors.goldPrimary : AppColors.cardBorder),
+        border: Border.all(color: validValue != null ? AppColors.goldPrimary : AppColors.cardBorder),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
-          value: value,
+          value: validValue,
           dropdownColor: AppColors.cardDark,
           hint: Text(hint, style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 12)),
           items: [
@@ -240,7 +249,7 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
               value: null,
               child: Text('$hint (Barchasi)', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
             ),
-            ...items,
+            ...cleanItems.map((i) => DropdownMenuItem<String?>(value: i.value, child: i.child)),
           ],
           onChanged: onChanged,
         ),
@@ -399,11 +408,26 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
 
     
 
-    String selectedFanId = testToEdit?.fanId ?? (testProvider.fans.isNotEmpty ? testProvider.fans.keys.first : '');
-    String selectedKafedraId = testToEdit?.kafedraId ?? (testProvider.kafedras.isNotEmpty ? testProvider.kafedras.keys.first : '');
-    String selectedEduPlanId = testToEdit?.eduPlanId ?? (testProvider.eduPlans.isNotEmpty ? testProvider.eduPlans.keys.first : '');
-    String selectedOquvYili = testToEdit?.oquvYili ?? (testProvider.oquvYillari.isNotEmpty ? testProvider.oquvYillari.first : '');
-    String selectedGuruh = testToEdit?.guruhId ?? (testProvider.guruhlar.isNotEmpty ? testProvider.guruhlar.keys.first : '');
+    List<DropdownMenuItem<String>> buildUniqueDropdownItems(Map<String, String> map) {
+      final Map<String, String> cleanMap = {};
+      for (var entry in map.entries) {
+        if (entry.key.isNotEmpty) {
+          cleanMap[entry.key] = entry.value;
+        }
+      }
+      return cleanMap.entries.map((e) {
+        return DropdownMenuItem<String>(
+          value: e.key,
+          child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+        );
+      }).toList();
+    }
+
+    String? selectedFanId = testToEdit?.fanId;
+    String? selectedKafedraId = testToEdit?.kafedraId;
+    String? selectedEduPlanId = testToEdit?.eduPlanId;
+    String? selectedOquvYili = testToEdit?.oquvYili;
+    String? selectedGuruh = testToEdit?.guruhId;
 
     List<QuestionModel> currentQuestions = testToEdit != null ? List.from(testToEdit.questions) : [];
 
@@ -411,6 +435,36 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setModalState) {
+          final fanItems = buildUniqueDropdownItems(testProvider.fans);
+          final fanValue = fanItems.any((i) => i.value == selectedFanId)
+              ? selectedFanId
+              : (fanItems.isNotEmpty ? fanItems.first.value : null);
+
+          final kafedraItems = buildUniqueDropdownItems(testProvider.kafedras);
+          final kafedraValue = kafedraItems.any((i) => i.value == selectedKafedraId)
+              ? selectedKafedraId
+              : (kafedraItems.isNotEmpty ? kafedraItems.first.value : null);
+
+          final eduPlanItems = buildUniqueDropdownItems(testProvider.eduPlans);
+          final eduPlanValue = eduPlanItems.any((i) => i.value == selectedEduPlanId)
+              ? selectedEduPlanId
+              : (eduPlanItems.isNotEmpty ? eduPlanItems.first.value : null);
+
+          final guruhItems = buildUniqueDropdownItems(testProvider.guruhlar);
+          final guruhValue = guruhItems.any((i) => i.value == selectedGuruh)
+              ? selectedGuruh
+              : (guruhItems.isNotEmpty ? guruhItems.first.value : null);
+
+          final oquvYiliItems = testProvider.oquvYillari.map((e) {
+            return DropdownMenuItem<String>(
+              value: e,
+              child: Text(e, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+            );
+          }).toList();
+          final oquvYiliValue = oquvYiliItems.any((i) => i.value == selectedOquvYili)
+              ? selectedOquvYili
+              : (oquvYiliItems.isNotEmpty ? oquvYiliItems.first.value : null);
+
           return AlertDialog(
             backgroundColor: AppColors.cardDark,
             shape: RoundedRectangleBorder(
@@ -447,13 +501,12 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: selectedFanId,
+                                  child: DropdownButton<String?>(
+                                    value: fanValue,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: testProvider.fans.entries.map((e) {
-                                      return DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
-                                    }).toList(),
+                                    hint: const Text('Fanni tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                                    items: fanItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedFanId = val);
                                     },
@@ -472,13 +525,12 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: selectedKafedraId,
+                                  child: DropdownButton<String?>(
+                                    value: kafedraValue,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: testProvider.kafedras.entries.map((e) {
-                                      return DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
-                                    }).toList(),
+                                    hint: const Text('Kafedrani tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                                    items: kafedraItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedKafedraId = val);
                                     },
@@ -503,13 +555,12 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: selectedEduPlanId,
+                                  child: DropdownButton<String?>(
+                                    value: eduPlanValue,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: testProvider.eduPlans.entries.map((e) {
-                                      return DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
-                                    }).toList(),
+                                    hint: const Text('Rejani tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                                    items: eduPlanItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedEduPlanId = val);
                                     },
@@ -528,13 +579,12 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: selectedGuruh,
+                                  child: DropdownButton<String?>(
+                                    value: guruhValue,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: testProvider.guruhlar.entries.map((e) {
-                                      return DropdownMenuItem(value: e.key, child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
-                                    }).toList(),
+                                    hint: const Text('Guruhni tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                                    items: guruhItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedGuruh = val);
                                     },
@@ -559,13 +609,12 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: selectedOquvYili,
+                                  child: DropdownButton<String?>(
+                                    value: oquvYiliValue,
                                     dropdownColor: AppColors.cardDark,
                                     isExpanded: true,
-                                    items: testProvider.oquvYillari.map((e) {
-                                      return DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)));
-                                    }).toList(),
+                                    hint: const Text('O\'quv yilini tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                                    items: oquvYiliItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
                                     onChanged: (val) {
                                       if (val != null) setModalState(() => selectedOquvYili = val);
                                     },
@@ -664,30 +713,48 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.goldPrimary, foregroundColor: AppColors.backgroundDark),
-                onPressed: () {
-                  final fanName = testProvider.fans[selectedFanId] ?? selectedFanId;
-                  final guruhName = testProvider.guruhlar[selectedGuruh] ?? selectedGuruh;
-                  final generatedName = '$fanName fanidan $guruhName uchun $selectedOquvYili o\'quv yili testi';
+                onPressed: () async {
+                  final fanName = testProvider.fans[selectedFanId ?? ''] ?? selectedFanId ?? '';
+                  final guruhName = testProvider.guruhlar[selectedGuruh ?? ''] ?? selectedGuruh ?? '';
+                  final generatedName = '$fanName fanidan $guruhName uchun ${selectedOquvYili ?? ""} o\'quv yili testi';
 
                   final newTest = TestModel(
                     id: testToEdit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
                     name: generatedName,
-                    fanId: selectedFanId,
-                    kafedraId: selectedKafedraId,
-                    eduPlanId: selectedEduPlanId,
-                    guruhId: selectedGuruh,
-                    oquvYili: selectedOquvYili,
+                    fanId: selectedFanId ?? '',
+                    kafedraId: selectedKafedraId ?? '',
+                    eduPlanId: selectedEduPlanId ?? '',
+                    guruhId: selectedGuruh ?? '',
+                    oquvYili: selectedOquvYili ?? '',
                     ajratilganVaqt: 60,
                     questions: currentQuestions,
                   );
 
+                  bool success = false;
                   if (testToEdit == null) {
-                    testProvider.addTest(newTest);
+                    success = await testProvider.addTest(newTest);
                   } else {
-                    testProvider.updateTest(newTest);
+                    success = await testProvider.updateTest(newTest);
                   }
 
-                  Navigator.of(dialogContext).pop();
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(testToEdit == null ? '✔ Test muvaffaqiyatli yaratildi!' : '✔ Test muvaffaqiyatli yangilandi!'),
+                          backgroundColor: AppColors.emeraldAccent,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('❌ Testni saqlashda xatolik yuz berdi!'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  }
                 },
                 child: Text(testToEdit == null ? 'YARATISH' : 'SAQLASH'),
               ),
@@ -909,17 +976,34 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
   void _confirmDeleteDialog(BuildContext context, String id, TestProvider provider) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         backgroundColor: AppColors.cardDark,
         title: Text('TESTNI O\'CHIRISH', style: AppTextStyles.titleHeader.copyWith(color: AppColors.error)),
         content: Text('Haqiqatan ham ushbu testni o\'chirib tashlamoqchimisiz?', style: AppTextStyles.bodyText),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('BEKOR QILISH')),
+          TextButton(onPressed: () => Navigator.of(dialogCtx).pop(), child: const Text('BEKOR QILISH')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () {
-              provider.deleteTest(id);
-              Navigator.of(context).pop();
+            onPressed: () async {
+              final success = await provider.deleteTest(id);
+              if (dialogCtx.mounted) {
+                Navigator.of(dialogCtx).pop();
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✔ Test muvaffaqiyatli o\'chirildi!'),
+                      backgroundColor: AppColors.emeraldAccent,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('❌ Testni o\'chirishda xatolik yuz berdi!'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text('O\'CHIRISH'),
           ),
@@ -930,18 +1014,6 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
 
   Widget _buildFormLabel(String label) {
     return Text(label, style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.textSecondary));
-  }
-
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textMuted),
-      filled: true,
-      fillColor: AppColors.inputBackground,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.cardBorder)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.goldPrimary)),
-    );
   }
 
   Widget _buildDropdownContainer({required Widget child}) {

@@ -91,13 +91,15 @@ class EduPlanService {
         '${ApiConfig.eduPlans}/${plan.id}',
         data: plan.toRequestDtoJson(),
       );
-      if (response.statusCode == 200 && plan.topics.isNotEmpty) {
+      final isSuccess = response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204;
+      if (isSuccess && plan.topics.isNotEmpty) {
         await uploadTopicsBulk(plan.id, plan.topics);
       }
-      return response.statusCode == 200;
+      return isSuccess;
     } on DioException catch (e) {
       if (kDebugMode) {
         debugPrint('❌ [EDU PLAN SERVICE UPDATE ERR]: ${e.message}');
+        debugPrint('❌ [EDU PLAN SERVICE UPDATE ERR DATA]: ${e.response?.data}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -111,10 +113,11 @@ class EduPlanService {
   Future<bool> deleteEduPlan(String id) async {
     try {
       final response = await _apiService.dio.delete('${ApiConfig.eduPlans}/$id');
-      return response.statusCode == 200 || response.statusCode == 204;
+      return response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204;
     } on DioException catch (e) {
       if (kDebugMode) {
         debugPrint('❌ [EDU PLAN SERVICE DELETE ERR]: ${e.message}');
+        debugPrint('❌ [EDU PLAN SERVICE DELETE ERR DATA]: ${e.response?.data}');
       }
     } catch (e) {
       if (kDebugMode) {

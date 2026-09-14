@@ -197,18 +197,22 @@ class TestProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addTest(TestModel test) async {
+  Future<bool> addTest(TestModel test) async {
     isLoading = true;
     notifyListeners();
     final result = await _service.createTest(test);
     if (result != null) {
       _tests.add(result);
+      isLoading = false;
+      notifyListeners();
+      return true;
     }
     isLoading = false;
     notifyListeners();
+    return false;
   }
 
-  Future<void> updateTest(TestModel test) async {
+  Future<bool> updateTest(TestModel test) async {
     isLoading = true;
     notifyListeners();
     final success = await _service.updateTest(test);
@@ -220,9 +224,10 @@ class TestProvider extends ChangeNotifier {
     }
     isLoading = false;
     notifyListeners();
+    return success;
   }
 
-  Future<void> deleteTest(String id) async {
+  Future<bool> deleteTest(String id) async {
     isLoading = true;
     notifyListeners();
     final success = await _service.deleteTest(id);
@@ -231,6 +236,7 @@ class TestProvider extends ChangeNotifier {
     }
     isLoading = false;
     notifyListeners();
+    return success;
   }
 
   // Parse questions list from JSON
