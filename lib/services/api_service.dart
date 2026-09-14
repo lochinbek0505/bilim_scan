@@ -64,8 +64,11 @@ class ApiService {
 
           if (kDebugMode) {
             debugPrint(
-              '❌ [API ERR] ${statusCode ?? 'NET_ERR'} <- ${error.requestOptions.path}: ${error.message}',
+              '❌ [API ERR] ${statusCode ?? 'NET_ERR'} <- ${error.requestOptions.path}',
             );
+            debugPrint('❌ [API ERR MSG]: ${error.message}');
+            debugPrint('❌ [API ERR TYPE]: ${error.type}');
+            debugPrint('❌ [API ERR ERROR_OBJ]: ${error.error}');
           }
 
           // 401 (Unauthorized) OR 403 (Forbidden) -> Perform automatic logout

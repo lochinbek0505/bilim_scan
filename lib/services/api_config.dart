@@ -42,7 +42,7 @@ class ApiConfig {
   static const String fanlar = '/admin/fanlar';
   static const String guruhlar = '/admin/guruhlar';
   static const String kafedralar = '/admin/kafedralar';
-  static const String fileUploadProfile = '/files/upload/profile';
+  static const String fileUploadProfile = '/files/upload-profile';
 
   static const String tests = '/tests';
   static const String eduPlans = '/edu-plans';

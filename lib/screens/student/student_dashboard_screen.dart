@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/widgets/authenticated_image.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../models/student_exam_model.dart';
 import '../../providers/auth_provider.dart';
@@ -122,6 +123,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 studentId: studentId,
                 groupName: groupName,
                 bosqich: user?.bosqich?['name'].toString() ?? '1 - bosqich',
+                profileImageUrl: user?.profileImageUrl?.toString(),
               ),
 
               const SizedBox(height: 20),
@@ -170,6 +172,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     required String studentId,
     required String groupName,
     required String bosqich,
+    String? profileImageUrl,
   }) {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -186,14 +189,12 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.goldPrimary.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.goldPrimary),
-            ),
-            child: const Icon(Icons.person, color: AppColors.goldPrimary, size: 28),
+          AuthenticatedImage(
+            imageUrl: profileImageUrl,
+            name: studentName,
+            width: 52,
+            height: 52,
+            borderColor: AppColors.goldPrimary,
           ),
           const SizedBox(width: 16),
           Expanded(

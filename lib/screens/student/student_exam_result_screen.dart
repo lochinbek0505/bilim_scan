@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/widgets/authenticated_image.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../models/login_model.dart';
 import '../../providers/auth_provider.dart';
@@ -46,18 +47,13 @@ class StudentExamResultScreen extends StatelessWidget {
   }
 
   Widget _buildProfileAvatar(User? user, {double radius = 26}) {
-    final photoUrl = user?.profileImageUrl?.toString();
-    if (photoUrl != null && photoUrl.startsWith('http')) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundImage: NetworkImage(photoUrl),
-        backgroundColor: AppColors.goldPrimary.withValues(alpha: 0.2),
-      );
-    }
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: AppColors.goldPrimary.withValues(alpha: 0.2),
-      child: Icon(Icons.person, color: AppColors.goldPrimary, size: radius * 1.1),
+    final name = '${user?.firstName ?? ""} ${user?.lastName ?? ""}'.trim();
+    return AuthenticatedImage(
+      imageUrl: user?.profileImageUrl?.toString(),
+      name: name.isEmpty ? user?.username : name,
+      width: radius * 2,
+      height: radius * 2,
+      borderColor: AppColors.goldPrimary,
     );
   }
 
