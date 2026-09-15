@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -12,9 +15,12 @@ import '../../models/guruh_model.dart';
 import '../../models/student_monitoring_model.dart';
 import '../../models/student_exam_model.dart';
 import '../../models/user_response_dto.dart';
+import '../../models/student_export_model.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../services/api_config.dart';
 import '../../services/monitoring_service.dart';
+import '../../services/pdf_export_service.dart';
 
 enum MonitoringStep { bosqich, guruh, user, natija }
 
@@ -61,6 +67,125 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
   void dispose() {
     _idSearchController.dispose();
     super.dispose();
+  }
+
+  Future<String?> _fetchImageBase64(String? url) async {
+    if (url == null || url.trim().isEmpty) return null;
+    try {
+      final fullUrl = ApiConfig.getFileUrl(url);
+      final response = await Dio().get(
+        fullUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (response.data != null) {
+        return base64Encode(response.data);
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint("Image fetch error ($url): $e");
+    }
+    return null;
+  }
+
+  Future<void> _exportSingleStudent() async {
+    if (_selectedUser == null || _monitoringData == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Ma'lumotlar to'liq emas!")));
+      return;
+    }
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.goldPrimary)),
+    );
+
+    String? base64Img = await _fetchImageBase64(_selectedUser!.profileImageUrl);
+    
+    final exportData = StudentExportData(
+      student: _selectedUser!,
+      base64Image: base64Img,
+      monitoringData: _monitoringData!,
+    );
+    
+    String fileName = "${_selectedUser?.firstName ?? 'Kursant'}_${_selectedUser?.lastName ?? ''}_Natija".trim();
+    
+    if (mounted) Navigator.pop(context);
+    await PdfExportService.exportResultsToPdf([exportData], fileName);
+  }
+
+  Future<void> _exportGroup(GuruhModel guruh) async {
+    final userProv = context.read<UserProvider>();
+    final usersInGroup = userProv.users.where((u) => u.guruh?.id == guruh.id).toList();
+    
+    if (usersInGroup.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Ushbu guruhda kursantlar mavjud emas!")));
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.cardDark,
+        title: const Text("Guruh ma'lumotlari yuklanmoqda... (Kuting)", style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: const Column(mainAxisSize: MainAxisSize.min, children: [CircularProgressIndicator(color: AppColors.goldPrimary)]),
+      ),
+    );
+
+    List<StudentExportData> groupExportData = [];
+    
+    for (var user in usersInGroup) {
+       final mData = await _monitoringService.getStudentMonitoring(user.id ?? '');
+       if (mData != null) {
+         String? base64Img = await _fetchImageBase64(user.profileImageUrl);
+         groupExportData.add(StudentExportData(student: user, base64Image: base64Img, monitoringData: mData));
+       }
+    }
+
+    String fileName = "${guruh.name ?? 'Guruh'}_Natijalari".trim();
+
+    if (mounted) Navigator.pop(context);
+    await PdfExportService.exportResultsToPdf(groupExportData, fileName);
+  }
+
+  Future<void> _exportBosqich(CatalogResponse bosqich) async {
+    final catalogProv = context.read<CatalogProvider>();
+    final groupsInBosqich = catalogProv.guruhlar.where((g) => g.bosqich?.id == bosqich.id).toList();
+    
+    final userProv = context.read<UserProvider>();
+    List<UserResponseDto> usersInBosqich = [];
+    for (var g in groupsInBosqich) {
+       usersInBosqich.addAll(userProv.users.where((u) => u.guruh?.id == g.id));
+    }
+
+    if (usersInBosqich.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Ushbu bosqichda kursantlar mavjud emas!")));
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.cardDark,
+        title: const Text("Bosqich ma'lumotlari yuklanmoqda... (Kuting)", style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: const Column(mainAxisSize: MainAxisSize.min, children: [CircularProgressIndicator(color: AppColors.goldPrimary)]),
+      ),
+    );
+
+    List<StudentExportData> exportDataList = [];
+    
+    for (var user in usersInBosqich) {
+       final mData = await _monitoringService.getStudentMonitoring(user.id ?? '');
+       if (mData != null) {
+         String? base64Img = await _fetchImageBase64(user.profileImageUrl);
+         exportDataList.add(StudentExportData(student: user, base64Image: base64Img, monitoringData: mData));
+       }
+    }
+
+    String fileName = "${bosqich.name ?? 'Bosqich'}_Natijalari".trim();
+
+    if (mounted) Navigator.pop(context);
+    await PdfExportService.exportResultsToPdf(exportDataList, fileName);
   }
 
   Future<void> _fetchStudentMonitoring(String studentId, [UserResponseDto? user]) async {
@@ -1086,6 +1211,14 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                       style: AppTextStyles.titleSubHeader,
                     ),
                   ),
+                  if (_selectedBosqich != null) ...[
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.download_rounded, color: AppColors.emeraldAccent),
+                      tooltip: 'Bosqichni PDF formatida yuklash',
+                      onPressed: () => _exportBosqich(_selectedBosqich!),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -1221,6 +1354,14 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                     '${filteredUsers.length} ta',
                     style: const TextStyle(color: AppColors.goldPrimary, fontWeight: FontWeight.bold),
                   ),
+                  if (_selectedGuruh != null) ...[
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.download_rounded, color: AppColors.goldPrimary),
+                      tooltip: 'Guruhni PDF formatida yuklash',
+                      onPressed: () => _exportGroup(_selectedGuruh!),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -1518,6 +1659,11 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.download_rounded, color: AppColors.goldPrimary),
+            tooltip: 'Natijalarni PDF formatida yuklash',
+            onPressed: _exportSingleStudent,
           ),
         ],
       ),

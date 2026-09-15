@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   nsd_windows
+  printing
   rive_native
   screen_retriever_windows
   window_manager

@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  printing
   rive_native
   screen_retriever_linux
   window_manager
