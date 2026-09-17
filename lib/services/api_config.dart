@@ -43,12 +43,16 @@ class ApiConfig {
   static const String guruhlar = '/admin/guruhlar';
   static const String kafedralar = '/admin/kafedralar';
   static const String fileUploadProfile = '/files/upload-profile';
-
+  static const String adminExam = '/exams/admin/all';
   static const String tests = '/tests';
   static const String eduPlans = '/edu-plans';
   static const String exams = '/exams';
   static const String examCreate = '/exams/create';
   static const String studentMonitoring = '/analytics/monitoring/student';
+  static const String statisticsLyceum = '/analytics/statistics/lyceum';
+  static const String statisticsGroup = '/analytics/statistics/group';
+  static const String statisticsStage = '/analytics/statistics/stage';
+  static const String statisticsSubject = '/analytics/statistics/subject';
 
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 15);

@@ -110,13 +110,13 @@ class ExamProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> fetchInitialData() async {
+  Future<void> fetchInitialData({bool isAdmin = true}) async {
     _isLoading = true;
     notifyListeners();
 
     try {
       final futures = await Future.wait([
-        _service.getExams(),
+        isAdmin ? _service.getExamAdmin() : _service.getExams(),
         _catalogService.getBosqichlar(),
         _catalogService.getGuruhlar(),
         _testService.getTests(),
@@ -152,7 +152,8 @@ class ExamProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> fetchExams() => fetchInitialData();
+  Future<void> fetchExams({bool isAdmin = true}) => fetchInitialData(isAdmin: isAdmin);
+  Future<void> fetchAdminExams() => fetchInitialData(isAdmin: true);
 
   Future<bool> createExam(ExamModel exam) async {
     _isLoading = true;

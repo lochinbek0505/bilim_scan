@@ -26,6 +26,24 @@ class ExamService {
     }
     return [];
   }
+  Future<List<ExamModel>> getExamAdmin() async {
+    try {
+      final response = await _apiService.dio.get(ApiConfig.adminExam);
+      if (response.statusCode == 200 && response.data != null) {
+        final List<dynamic> list = response.data as List<dynamic>;
+        return list.map((e) => ExamModel.fromJson(e as Map<String, dynamic>)).toList();
+      }
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [EXAM SERVICE GET ERR]: ${e.message}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [EXAM SERVICE GET UNKNOWN ERR]: $e');
+      }
+    }
+    return [];
+  }
 
   /// POST /api/exams/create (Token bilan)
   /// Sends payload:

@@ -1,3 +1,4 @@
+import 'package:bilim_scan/providers/test_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
@@ -11,6 +12,11 @@ import '../exam_management/exam_management_screen.dart';
 import '../catalog_management/catalog_management_screen.dart';
 import '../user_management/user_management_screen.dart';
 import '../monitoring/student_monitoring_screen.dart';
+import '../statistics/statistics_screen.dart';
+import '../../providers/catalog_provider.dart';
+import '../../providers/user_provider.dart';
+import '../../providers/exam_provider.dart';
+import '../../services/statistics_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +26,27 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int? _apiTotalExams;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CatalogProvider>().fetchAllCatalogs();
+      context.read<UserProvider>().fetchUsers();
+      context.read<TestProvider>().fetchData();
+      _fetchLyceumStats();
+    });
+  }
+
+  Future<void> _fetchLyceumStats() async {
+    final stats = await StatisticsService().getLyceumStatistics();
+    if (mounted && stats != null && stats.totalExamsTaken != null) {
+      setState(() {
+        _apiTotalExams = stats.totalExamsTaken!.toInt();
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -293,11 +320,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       // 11. Statistika
                       _buildAdminModuleCard(
-                        title: '11. STATISTIKA VA MONITORING',
-                        subtitle: 'Guruhlar, fanlar va o\'zlashtirish dinamikasi bo\'yicha tahliliy hisobot',
+                        title: '11. STATISTIKA VA ANALITIKA',
+                        subtitle: 'Litsey, bosqichlar, guruhlar va fanlar bo\'yicha tahliliy hisobot hamda dachbord',
                         badgeText: 'Analitika',
                         icon: Icons.bar_chart_rounded,
                         accentColor: const Color(0xFF3B82F6),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => const StatisticsScreen()),
+                          );
+                        },
+                      ),
+
+                      // 12. Monitoring
+                      _buildAdminModuleCard(
+                        title: '12. KURSANTLAR MONITORINGI',
+                        subtitle: 'Alohida o\'quvchilar va guruhlar kesimida shaxsiy o\'zlashtirish monitoringi',
+                        badgeText: 'Monitoring',
+                        icon: Icons.person_search_outlined,
+                        accentColor: AppColors.goldPrimary,
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(builder: (context) => const StudentMonitoringScreen()),
@@ -395,44 +436,60 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Quick Overview Metric Chips
   Widget _buildQuickStatsOverviewRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatChip(
-            label: 'O\'QUVCHILAR',
-            value: '250+ o\'quvchi',
-            icon: Icons.school_outlined,
-            color: AppColors.goldPrimary,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatChip(
-            label: 'GURUHLAR',
-            value: '12 ta guruh',
-            icon: Icons.groups_outlined,
-            color: AppColors.emeraldAccent,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatChip(
-            label: 'KAFEDRALAR',
-            value: '6 ta kafedra',
-            icon: Icons.account_balance_outlined,
-            color: const Color(0xFF0EA5E9),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatChip(
-            label: 'TEST TOPSHIRISHLAR',
-            value: '1,420 ta test',
-            icon: Icons.assignment_turned_in_outlined,
-            color: const Color(0xFFA855F7),
-          ),
-        ),
-      ],
+    return Consumer3<UserProvider, CatalogProvider, ExamProvider>(
+      builder: (context, userProv, catalogProv, examProv, child) {
+        final studentCount = userProv.users.length;
+        final displayStudentCount = studentCount > 0 ? '$studentCount ta o\'quvchi' : '250+ o\'quvchi';
+
+        final groupCount = catalogProv.guruhlar.length;
+        final displayGroupCount = groupCount > 0 ? '$groupCount ta guruh' : '12 ta guruh';
+
+        final kafedraCount = catalogProv.kafedralar.length;
+        final displayKafedraCount = kafedraCount > 0 ? '$kafedraCount ta kafedra' : '6 ta kafedra';
+
+        final totalExams = _apiTotalExams ?? (examProv.exams.isNotEmpty ? examProv.exams.length : 66);
+        final displayExamCount = '$totalExams ta test';
+
+        return Row(
+          children: [
+            Expanded(
+              child: _buildStatChip(
+                label: 'O\'QUVCHILAR',
+                value: displayStudentCount,
+                icon: Icons.school_outlined,
+                color: AppColors.goldPrimary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatChip(
+                label: 'GURUHLAR',
+                value: displayGroupCount,
+                icon: Icons.groups_outlined,
+                color: AppColors.emeraldAccent,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatChip(
+                label: 'KAFEDRALAR',
+                value: displayKafedraCount,
+                icon: Icons.account_balance_outlined,
+                color: const Color(0xFF0EA5E9),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatChip(
+                label: 'TEST TOPSHIRISHLAR',
+                value: displayExamCount,
+                icon: Icons.assignment_turned_in_outlined,
+                color: const Color(0xFFA855F7),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

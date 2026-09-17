@@ -12,6 +12,7 @@ import 'screens/splash/splash_screen.dart';
 import 'screens/login/login_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
 void navigateToLogin() {
   navigatorKey.currentState?.pushAndRemoveUntil(
@@ -48,6 +49,7 @@ class BilimScanApp extends StatelessWidget {
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,
+        navigatorObservers: [routeObserver],
         title: 'IIV Akademik Litseyi - Bilim Scan',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(

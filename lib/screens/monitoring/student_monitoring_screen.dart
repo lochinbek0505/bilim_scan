@@ -401,34 +401,7 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // API ENDPOINT BANNER
-                    Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 14),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.info.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.info.withValues(alpha: 0.4)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.api_rounded, color: AppColors.info, size: 14),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'GET /api/exams/$examSessionId/score/$studentId',
-                              style: const TextStyle(
-                                color: AppColors.info,
-                                fontSize: 10,
-                                fontFamily: 'monospace',
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+
 
                     // KURSANT PROFILE CARD (Exact match to StudentExamResultScreen)
                     Container(
@@ -676,14 +649,14 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                           ),
                           const SizedBox(height: 8),
                           _buildDetailRow('Imtihon nomi', examObj?.examName ?? sessionDetails?.name ?? 'Imtihon'),
-                          _buildDetailRow('examSessionId', examSessionId, isId: true),
-                          _buildDetailRow('studentId', studentId, isId: true),
+                          _buildDetailRow('Sessiya kodi', examSessionId, isId: true),
+                          _buildDetailRow('Kursant kodi', studentId, isId: true),
                           if (scoreResult?.startedAt != null && scoreResult!.startedAt.isNotEmpty)
                             _buildDetailRow('Boshlangan vaqt', scoreResult.startedAt),
                           if (scoreResult?.finishedAt != null && scoreResult!.finishedAt.isNotEmpty)
                             _buildDetailRow('Tugallangan vaqt', scoreResult.finishedAt),
                           if (sessionDetails != null) ...[
-                            _buildDetailRow('Test ID', sessionDetails.testId, isId: true),
+                            _buildDetailRow('Test kodi', sessionDetails.testId, isId: true),
                             _buildDetailRow('Ajratilgan vaqt', '${sessionDetails.durationMinutes} daqiqa'),
                             _buildDetailRow('Savollar soni', '${sessionDetails.questionCount} ta'),
                             _buildDetailRow('Holati', sessionDetails.status),
@@ -1640,14 +1613,13 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.fingerprint_rounded, color: AppColors.goldPrimary, size: 14),
+                        const Icon(Icons.person_outline_rounded, color: AppColors.goldPrimary, size: 14),
                         const SizedBox(width: 6),
-                        Text(
-                          'studentId: $studentId',
-                          style: const TextStyle(
+                        const Text(
+                          'Talaba profili',
+                          style: TextStyle(
                             color: AppColors.goldLight,
                             fontSize: 11,
-                            fontFamily: 'monospace',
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1901,14 +1873,13 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.tag_rounded, color: AppColors.emeraldAccent, size: 12),
+                        const Icon(Icons.info_outline_rounded, color: AppColors.emeraldAccent, size: 12),
                         const SizedBox(width: 4),
-                        Text(
-                          'subjectId: $subjectId',
-                          style: const TextStyle(
+                        const Text(
+                          'Fan ma\'lumotlari',
+                          style: TextStyle(
                             color: AppColors.emeraldAccent,
                             fontSize: 10,
-                            fontFamily: 'monospace',
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -2023,14 +1994,13 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.qr_code_rounded, color: AppColors.info, size: 12),
+                        const Icon(Icons.analytics_outlined, color: AppColors.info, size: 12),
                         const SizedBox(width: 4),
-                        Text(
-                          'examSessionId: ${examSessionId.length > 10 ? "${examSessionId.substring(0, 10)}..." : examSessionId}',
-                          style: const TextStyle(
+                        const Text(
+                          'Natijalar va tahlil',
+                          style: TextStyle(
                             color: AppColors.info,
                             fontSize: 10,
-                            fontFamily: 'monospace',
                             fontWeight: FontWeight.bold,
                           ),
                         ),

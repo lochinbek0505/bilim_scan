@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/authenticated_image.dart';
 import '../../core/widgets/tactical_background.dart';
+import '../../main.dart';
 import '../../models/student_exam_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/student_exam_provider.dart';
@@ -16,7 +17,7 @@ class StudentDashboardScreen extends StatefulWidget {
   State<StudentDashboardScreen> createState() => _StudentDashboardScreenState();
 }
 
-class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
+class _StudentDashboardScreenState extends State<StudentDashboardScreen> with RouteAware {
   String? _startingExamId;
 
   @override
@@ -26,6 +27,27 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       if (!mounted) return;
       _refreshExams();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final modalRoute = ModalRoute.of(context);
+    if (modalRoute is PageRoute) {
+      routeObserver.subscribe(this, modalRoute);
+    }
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // Navigatsiya bilan boshqa ekrandan qaytganda avtomatik ma'lumotlarni yangilash
+    _refreshExams();
   }
 
   void _refreshExams() {
@@ -64,11 +86,14 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     });
 
     if (success) {
-      Navigator.of(context).push(
+      await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => const StudentTestTakingScreen(),
         ),
       );
+      if (mounted) {
+        _refreshExams();
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -170,14 +195,31 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 child: studentExamProvider.isLoading
                     ? const Center(child: CircularProgressIndicator(color: AppColors.goldPrimary))
                     : studentExamProvider.exams.isEmpty
-                        ? _buildEmptyState()
-                        : ListView.separated(
-                            itemCount: studentExamProvider.exams.length,
-                            separatorBuilder: (context, index) => const SizedBox(height: 14),
-                            itemBuilder: (context, index) {
-                              final exam = studentExamProvider.exams[index];
-                              return _buildExamCard(context, exam, studentId);
-                            },
+                        ? RefreshIndicator(
+                            color: AppColors.goldPrimary,
+                            backgroundColor: AppColors.cardDark,
+                            onRefresh: () async => _refreshExams(),
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: SizedBox(
+                                height: MediaQuery.of(context).size.height * 0.4,
+                                child: _buildEmptyState(),
+                              ),
+                            ),
+                          )
+                        : RefreshIndicator(
+                            color: AppColors.goldPrimary,
+                            backgroundColor: AppColors.cardDark,
+                            onRefresh: () async => _refreshExams(),
+                            child: ListView.separated(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: studentExamProvider.exams.length,
+                              separatorBuilder: (context, index) => const SizedBox(height: 14),
+                              itemBuilder: (context, index) {
+                                final exam = studentExamProvider.exams[index];
+                                return _buildExamCard(context, exam, studentId);
+                              },
+                            ),
                           ),
               ),
             ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../models/login_model.dart';
+import '../services/api_config.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
@@ -22,11 +23,11 @@ extension UserRoleExtension on UserRole {
   String get code {
     switch (this) {
       case UserRole.user:
-        return 'STUDENT_ROLE';
+        return 'USER';
       case UserRole.teacher:
-        return 'TEACHER_ROLE';
+        return 'TEACHER';
       case UserRole.admin:
-        return 'SYS_ADMIN';
+        return 'ADMIN';
     }
   }
 }
@@ -45,7 +46,7 @@ class AuthProvider extends ChangeNotifier {
   String _selectedGroup = '10-25-guruh o\'quvchilari';
 
   final TextEditingController loginController = TextEditingController(text: 'student_1025');
-  final TextEditingController passwordController = TextEditingController(text: '••••••••');
+  final TextEditingController passwordController = TextEditingController(text: '');
 
   LoginModel? get currentUserModel => _currentUserModel;
   UserRole get selectedRole => _selectedRole;
@@ -124,7 +125,7 @@ class AuthProvider extends ChangeNotifier {
 
     _errorMessage = null;
     _isLoading = true;
-    _statusLog = 'http://127.0.0.1:4257/api/auth/login so\'rovi yuborilmoqda...';
+    _statusLog = '${ApiConfig.baseUrl}${ApiConfig.login} so\'rovi yuborilmoqda...';
     notifyListeners();
 
     // Call API Service

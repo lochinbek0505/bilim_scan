@@ -5,9 +5,9 @@ import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/api_config.dart';
 import '../home/home_screen.dart';
 import '../student/student_dashboard_screen.dart';
-import 'student_login_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -239,65 +239,55 @@ class _LoginScreenState extends State<LoginScreen>
             ],
           ),
 
-          if (!isCompact) const SizedBox(height: 28),
-
-          // Server Badge
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.inputBackground,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: AppColors.cardBorder,
+          // Server Badge (faqat server IP topilganda ko'rinadi)
+          if (ApiConfig.discoveredHost != null &&
+              ApiConfig.discoveredHost!.isNotEmpty) ...[
+            if (!isCompact) const SizedBox(height: 28),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.inputBackground,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: AppColors.cardBorder,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: AppColors.emeraldAccent,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.emeraldAccent,
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'LOKAL SERVER: ONLINE (${ApiConfig.discoveredHost})',
+                      style: AppTextStyles.badgeText.copyWith(
+                        fontSize: 11,
+                        color: AppColors.emeraldAccent,
+                      ),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.lan_outlined,
+                    size: 18,
+                    color: AppColors.goldPrimary,
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                    color: AppColors.emeraldAccent,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.emeraldAccent,
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'LOKAL SERVER: ONLINE (BilimScan)',
-                        style: AppTextStyles.badgeText.copyWith(
-                          fontSize: 11,
-                          color: AppColors.emeraldAccent,
-                        ),
-                      ),
-                      Text(
-                        '25 ta o\'quv kompyuteri • Samarqand — 2026',
-                        style: AppTextStyles.bodyText.copyWith(
-                          fontSize: 10,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.lan_outlined,
-                  size: 18,
-                  color: AppColors.goldPrimary,
-                ),
-              ],
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -568,7 +558,8 @@ class _LoginScreenState extends State<LoginScreen>
                       : () async {
                           final success = await authProvider.login();
                           if (success && context.mounted) {
-                            if (authProvider.selectedRole == UserRole.user ){
+                            final role = authProvider.currentUserModel?.user?.role ?? authProvider.selectedRole.code;
+                            if (role == 'ADMIN' || role == 'TEACHER') {
                               Navigator.of(context).pushReplacement(
                                 MaterialPageRoute(
                                   builder: (context) => const HomeScreen(),
@@ -577,7 +568,7 @@ class _LoginScreenState extends State<LoginScreen>
                             } else {
                               Navigator.of(context).pushReplacement(
                                 MaterialPageRoute(
-                                  builder: (context) => const HomeScreen(),
+                                  builder: (context) => const StudentDashboardScreen(),
                                 ),
                               );
                             }
@@ -630,21 +621,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
 
-              const SizedBox(height: 12),
-              Center(
-                child: TextButton.icon(
-                  icon: const Icon(Icons.school_outlined, size: 16, color: AppColors.emeraldAccent),
-                  label: Text(
-                    'O\'quvchilar uchun alohida kirish sahifasi',
-                    style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.emeraldAccent),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const StudentLoginScreen()),
-                    );
-                  },
-                ),
-              ),
+
               const SizedBox(height: 12),
 
               // Bottom Footer
@@ -665,16 +642,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  IconData _getRoleIcon(UserRole role) {
-    switch (role) {
-      case UserRole.user:
-        return Icons.school_outlined;
-      case UserRole.teacher:
-        return Icons.person_pin_outlined;
-      case UserRole.admin:
-        return Icons.admin_panel_settings_outlined;
-    }
-  }
+
 
   Widget _buildInputFieldLabel(String label) {
     return Text(
