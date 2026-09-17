@@ -7,10 +7,18 @@ import 'api_service.dart';
 class TestService {
   final ApiService _apiService = ApiService();
 
-  /// GET /api/tests (Token bilan)
-  Future<List<TestModel>> getTests() async {
+  /// GET /api/tests (Token bilan, ixtiyoriy fanId va kafedraId filtrlari bilan)
+  Future<List<TestModel>> getTests({String? fanId, String? kafedraId}) async {
     try {
-      final response = await _apiService.dio.get(ApiConfig.tests);
+      final queryParams = <String, dynamic>{};
+      if (fanId != null && fanId.isNotEmpty) queryParams['fanId'] = fanId;
+      if (kafedraId != null && kafedraId.isNotEmpty) queryParams['kafedraId'] = kafedraId;
+
+      final response = await _apiService.dio.get(
+        ApiConfig.tests,
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
+
       if (response.statusCode == 200 && response.data != null) {
         final List<dynamic> list = response.data as List<dynamic>;
         return list.map((e) => TestModel.fromJson(e as Map<String, dynamic>)).toList();

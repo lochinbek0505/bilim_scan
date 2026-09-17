@@ -13,6 +13,7 @@ class ExamModel {
   final String? startTime;
   final String? endTime;
   final String status; // REJALASHTIRILGAN, FAOL, YAKUNLANGAN
+  final List<String>? combinedTestIds;
 
   ExamModel({
     required this.id,
@@ -27,6 +28,7 @@ class ExamModel {
     this.startTime,
     this.endTime,
     this.status = 'FAOL',
+    this.combinedTestIds,
   });
 
   factory ExamModel.fromJson(Map<String, dynamic> json) {
@@ -55,6 +57,13 @@ class ExamModel {
     final isActive = json['active'] as bool? ?? true;
     final parsedStatus = isActive ? 'FAOL' : 'YAKUNLANGAN';
 
+    List<String>? parsedCombined;
+    if (json['combinedTestIds'] != null && json['combinedTestIds'] is List) {
+      parsedCombined = (json['combinedTestIds'] as List)
+          .map((e) => e.toString())
+          .toList();
+    }
+
     return ExamModel(
       id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: json['name'] as String? ?? (gObj != null ? 'Imtihon (${gObj.name})' : 'Imtihon'),
@@ -68,6 +77,7 @@ class ExamModel {
       startTime: json['startTime'] as String?,
       endTime: json['endTime'] as String?,
       status: json['status'] as String? ?? parsedStatus,
+      combinedTestIds: parsedCombined,
     );
   }
 
@@ -85,6 +95,8 @@ class ExamModel {
       'startTime': startTime,
       'endTime': endTime,
       'status': status,
+      if (combinedTestIds != null && combinedTestIds!.isNotEmpty)
+        'combinedTestIds': combinedTestIds,
     };
   }
 
@@ -97,6 +109,8 @@ class ExamModel {
       'durationMinutes': durationMinutes,
       'questionCount': questionCount,
       'maxAttempts': maxAttempts,
+      if (combinedTestIds != null && combinedTestIds!.isNotEmpty)
+        'combinedTestIds': combinedTestIds,
     };
   }
 
@@ -117,6 +131,7 @@ class ExamModel {
     String? startTime,
     String? endTime,
     String? status,
+    List<String>? combinedTestIds,
   }) {
     return ExamModel(
       id: id ?? this.id,
@@ -131,6 +146,7 @@ class ExamModel {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       status: status ?? this.status,
+      combinedTestIds: combinedTestIds ?? this.combinedTestIds,
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:bilim_scan/screens/home/home_screen.dart';
+import 'package:bilim_scan/screens/login/login_screen.dart';
 import 'package:bilim_scan/screens/login/student_login_screen.dart';
 import 'package:bilim_scan/services/storage_service.dart';
 import 'package:bilim_scan/services/network_discovery_service.dart';
@@ -114,7 +115,7 @@ class _SplashScreenState extends State<SplashScreen>
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-            const StudentLoginScreen(),
+            const LoginScreen(),
             transitionsBuilder: (context, animation, secondaryAnimation,
                 child) {
               return FadeTransition(

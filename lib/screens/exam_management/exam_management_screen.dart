@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
@@ -6,6 +5,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../models/exam_model.dart';
 import '../../models/guruh_model.dart';
+import '../../models/test_model.dart';
 import '../../providers/exam_provider.dart';
 import '../../providers/test_provider.dart';
 
@@ -76,7 +76,7 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
 
               const SizedBox(height: 16),
 
-              // Filter Portal
+              // Filter Panel
               _buildFilterPanel(examProvider),
 
               const SizedBox(height: 16),
@@ -228,7 +228,7 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                 onChanged: (val) => provider.setGuruhFilter(val),
               ),
 
-              // Test Filter
+              // Test Filter (FIXED: calls setTestFilter)
               _buildFilterDropdown(
                 hint: 'Test: Barchasi',
                 value: provider.selectedTestFilter,
@@ -337,7 +337,7 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                       Text(exam.name ?? 'Imtihon', style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textPrimary)),
                       const SizedBox(height: 2),
                       Text(
-                        'Guruh: $guruhName ${bosqichName != null ? "($bosqichName)" : ""} • TestID: ${exam.testId}',
+                        'Guruh: $guruhName ${bosqichName != null ? "($bosqichName)" : ""}',
                         style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: AppColors.textMuted),
                       ),
                     ],
@@ -349,6 +349,12 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                 children: [
                   _buildStatusBadge(exam.status),
                   const SizedBox(width: 8),
+                  if (exam.active && exam.status == 'FAOL')
+                    IconButton(
+                      icon: const Icon(Icons.pause_circle_outline, color: AppColors.warning, size: 20),
+                      tooltip: 'Imtihonni to\'xtatish',
+                      onPressed: () => _confirmDisableDialog(context, exam.id, provider),
+                    ),
                   IconButton(
                     icon: const Icon(Icons.edit_outlined, color: AppColors.goldPrimary, size: 20),
                     tooltip: 'Tahrirlash',
@@ -368,29 +374,17 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
           const Divider(height: 1, color: AppColors.cardBorder),
           const SizedBox(height: 14),
 
-          // Badges & Actions Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Badges Row
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
             children: [
-              Wrap(
-                spacing: 8,
-                children: [
-                  _buildBadge(Icons.timer_outlined, 'Vaqt: ${exam.durationMinutes} min', AppColors.goldPrimary),
-                  _buildBadge(Icons.help_outline, 'Savollar: ${exam.questionCount} ta', AppColors.emeraldAccent),
-                  _buildBadge(Icons.loop, 'Urinishlar: ${exam.maxAttempts} ta', const Color(0xFF0EA5E9)),
-                  _buildBadge(Icons.play_arrow_outlined, 'Status: ${exam.active ? "FAOL" : "NOFAOL"}', AppColors.info),
-                ],
-              ),
-
-              OutlinedButton.icon(
-                icon: const Icon(Icons.code_outlined, size: 16, color: AppColors.goldPrimary),
-                label: Text('JSON SO\'ROVINI KO\'RISH', style: AppTextStyles.badgeText.copyWith(fontSize: 11, color: AppColors.goldPrimary)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.goldPrimary),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                ),
-                onPressed: () => _showJsonPayloadModal(context, exam),
-              ),
+              _buildBadge(Icons.timer_outlined, 'Vaqt: ${exam.durationMinutes} min', AppColors.goldPrimary),
+              _buildBadge(Icons.help_outline, 'Savollar: ${exam.questionCount} ta', AppColors.emeraldAccent),
+              _buildBadge(Icons.loop, 'Urinishlar: ${exam.maxAttempts} ta', const Color(0xFF0EA5E9)),
+              _buildBadge(Icons.play_arrow_outlined, 'Status: ${exam.active ? "FAOL" : "NOFAOL"}', AppColors.info),
+              if (exam.combinedTestIds != null && exam.combinedTestIds!.isNotEmpty)
+                _buildBadge(Icons.merge_type, 'Birlashgan: ${exam.combinedTestIds!.length} ta test', AppColors.goldPrimary),
             ],
           ),
         ],
@@ -443,7 +437,7 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
     final questionCountController = TextEditingController(text: (examToEdit?.questionCount ?? 5).toString());
     final maxAttemptsController = TextEditingController(text: (examToEdit?.maxAttempts ?? 20).toString());
 
-    final allTests = testProvider.tests.isNotEmpty ? testProvider.tests : examProvider.rawTests;
+    List<TestModel> allTests = testProvider.tests.isNotEmpty ? testProvider.tests : examProvider.rawTests;
     final allGuruhs = examProvider.rawGuruhlar;
     final allBosqichs = examProvider.rawBosqichlar;
 
@@ -465,6 +459,18 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
       selectedBosqichId = allBosqichs.first.id;
     }
 
+    // Combined Test IDs selection state
+    Set<String> selectedCombinedTestIds = {};
+    if (examToEdit?.combinedTestIds != null && examToEdit!.combinedTestIds!.isNotEmpty) {
+      selectedCombinedTestIds = Set.from(examToEdit.combinedTestIds!);
+    } else if (selectedTestId != null && selectedTestId.isNotEmpty) {
+      selectedCombinedTestIds = {selectedTestId};
+    }
+
+    // Dialog level filters
+    String? dialogFanId;
+    String? dialogKafedraId;
+
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -477,14 +483,17 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
             selectedGuruhId = filteredGuruhlar.isNotEmpty ? filteredGuruhlar.first.id : null;
           }
 
-          final currentApiJson = {
-            if (nameController.text.trim().isNotEmpty) "name": nameController.text.trim(),
-            "testId": selectedTestId ?? "",
-            "guruhId": selectedGuruhId ?? "",
-            "durationMinutes": int.tryParse(durationController.text) ?? 20,
-            "questionCount": int.tryParse(questionCountController.text) ?? 5,
-            "maxAttempts": int.tryParse(maxAttemptsController.text) ?? 20,
-          };
+          // Compute names of selected tests for the dropdown button text
+          final selectedTestNames = allTests
+              .where((t) => selectedCombinedTestIds.contains(t.id))
+              .map((t) => t.name)
+              .toList();
+
+          final primaryTestId = selectedCombinedTestIds.isNotEmpty
+              ? selectedCombinedTestIds.first
+              : (selectedTestId ?? '');
+
+          final combinedList = selectedCombinedTestIds.toList();
 
           return AlertDialog(
             backgroundColor: AppColors.cardDark,
@@ -516,9 +525,8 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                     const SizedBox(height: 4),
                     TextField(
                       controller: nameController,
-                      onChanged: (_) => setModalState(() {}),
                       style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
-                      decoration: _inputDecoration('Masalan: Matematika fanidan 1-oraliq nazorat'),
+                      decoration: _inputDecoration('Masalan: Yagona birlashgan fanlar bo\'yicha imtihon'),
                     ),
                     const SizedBox(height: 14),
 
@@ -567,7 +575,7 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFormLabel('GURUH (guruhId)'),
+                              _buildFormLabel('GURUH'),
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
@@ -599,25 +607,67 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
 
                     const SizedBox(height: 14),
 
-                    // TEST SELECTOR
-                    _buildFormLabel('TESTNI TANLANG (testId)'),
+                    // MULTI-SELECT TEST DROPDOWN BUTTON FIELD
+                    _buildFormLabel('TESTLARNI TANLANG VA BIRLASHTIRING'),
                     const SizedBox(height: 4),
-                    _buildDropdownContainer(
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String?>(
-                          value: selectedTestId,
-                          dropdownColor: AppColors.cardDark,
-                          isExpanded: true,
-                          hint: const Text('Test tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-                          items: allTests.map((t) {
-                            return DropdownMenuItem<String?>(
-                              value: t.id,
-                              child: Text(t.name, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) setModalState(() => selectedTestId = val);
-                          },
+                    InkWell(
+                      onTap: () async {
+                        final updated = await _showMultiSelectTestPickerModal(
+                          context: context,
+                          testProvider: testProvider,
+                          allTests: allTests,
+                          initialSelectedIds: selectedCombinedTestIds,
+                          initialFanId: dialogFanId,
+                          initialKafedraId: dialogKafedraId,
+                        );
+                        if (updated != null) {
+                          setModalState(() {
+                            selectedCombinedTestIds = updated.selectedTestIds;
+                            dialogFanId = updated.fanId;
+                            dialogKafedraId = updated.kafedraId;
+                            if (updated.testsList.isNotEmpty) {
+                              allTests = updated.testsList;
+                            }
+                          });
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.inputBackground,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: selectedCombinedTestIds.isNotEmpty
+                                ? AppColors.goldPrimary
+                                : AppColors.cardBorder,
+                            width: selectedCombinedTestIds.isNotEmpty ? 1.5 : 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.playlist_add_check, color: AppColors.goldPrimary, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                selectedCombinedTestIds.isEmpty
+                                    ? 'Testlarni tanlang (Multi-select dropdown)...'
+                                    : '${selectedCombinedTestIds.length} ta test tanlandi: ${selectedTestNames.join(", ")}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: selectedCombinedTestIds.isNotEmpty
+                                      ? AppColors.textPrimary
+                                      : AppColors.textMuted,
+                                  fontSize: 12,
+                                  fontWeight: selectedCombinedTestIds.isNotEmpty
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                            const Icon(Icons.arrow_drop_down, color: AppColors.goldPrimary),
+                          ],
                         ),
                       ),
                     ),
@@ -630,14 +680,13 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFormLabel('DAVOMIYLIGI (durationMinutes)'),
+                              _buildFormLabel('DAVOMIYLIGI (MINUT)'),
                               const SizedBox(height: 4),
                               TextField(
                                 controller: durationController,
                                 keyboardType: TextInputType.number,
                                 style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
                                 decoration: _inputDecoration('20'),
-                                onChanged: (val) => setModalState(() {}),
                               ),
                             ],
                           ),
@@ -647,14 +696,13 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFormLabel('SAVOLLAR SONI (questionCount)'),
+                              _buildFormLabel('SAVOLLAR SONI'),
                               const SizedBox(height: 4),
                               TextField(
                                 controller: questionCountController,
                                 keyboardType: TextInputType.number,
                                 style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
                                 decoration: _inputDecoration('5'),
-                                onChanged: (val) => setModalState(() {}),
                               ),
                             ],
                           ),
@@ -664,40 +712,18 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFormLabel('MAX URINISH (maxAttempts)'),
+                              _buildFormLabel('MAX URINISH'),
                               const SizedBox(height: 4),
                               TextField(
                                 controller: maxAttemptsController,
                                 keyboardType: TextInputType.number,
                                 style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
                                 decoration: _inputDecoration('20'),
-                                onChanged: (val) => setModalState(() {}),
                               ),
                             ],
                           ),
                         ),
                       ],
-                    ),
-
-                    const SizedBox(height: 18),
-                    const Divider(color: AppColors.cardBorder),
-                    const SizedBox(height: 10),
-
-                    // GENERATED API JSON PREVIEW
-                    _buildFormLabel('API SO\'ROV PAYLOADI (POST /api/exams/create):'),
-                    const SizedBox(height: 6),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.inputBackground,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.goldPrimary.withValues(alpha: 0.5)),
-                      ),
-                      child: Text(
-                        const JsonEncoder.withIndent('  ').convert(currentApiJson),
-                        style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: AppColors.goldPrimary),
-                      ),
                     ),
                   ],
                 ),
@@ -711,9 +737,9 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.goldPrimary, foregroundColor: AppColors.backgroundDark),
                 onPressed: () async {
-                  if (selectedTestId == null || selectedGuruhId == null) {
+                  if (primaryTestId.isEmpty || selectedGuruhId == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Test va Guruh tanlanishi shart!'), backgroundColor: AppColors.error),
+                      const SnackBar(content: Text('Kamida bitta Test va Guruh tanlanishi shart!'), backgroundColor: AppColors.error),
                     );
                     return;
                   }
@@ -726,12 +752,13 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                   final newExam = ExamModel(
                     id: examToEdit?.id ?? '',
                     name: name.isEmpty ? 'Imtihon' : name,
-                    testId: selectedTestId!,
+                    testId: primaryTestId,
                     guruhId: selectedGuruhId!,
                     durationMinutes: duration,
                     questionCount: count,
                     maxAttempts: attempts,
                     status: 'FAOL',
+                    combinedTestIds: combinedList.isNotEmpty ? combinedList : null,
                   );
 
                   if (examToEdit == null) {
@@ -751,42 +778,303 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
     );
   }
 
-  // JSON PAYLOAD MODAL
-  void _showJsonPayloadModal(BuildContext context, ExamModel exam) {
-    final jsonStr = const JsonEncoder.withIndent('  ').convert(exam.toCreateRequestJson());
+  // MULTI-SELECT TEST PICKER MODAL (GET /api/tests?fanId=...&kafedraId=...)
+  Future<_MultiTestPickerResult?> _showMultiSelectTestPickerModal({
+    required BuildContext context,
+    required TestProvider testProvider,
+    required List<TestModel> allTests,
+    required Set<String> initialSelectedIds,
+    String? initialFanId,
+    String? initialKafedraId,
+  }) {
+    Set<String> tempSelectedIds = Set.from(initialSelectedIds);
+    String? fanFilter = initialFanId;
+    String? kafedraFilter = initialKafedraId;
+    String searchQuery = '';
+    bool isFetching = false;
+    List<TestModel> currentDisplayTests = List.from(allTests);
 
+    return showDialog<_MultiTestPickerResult>(
+      context: context,
+      builder: (modalContext) => StatefulBuilder(
+        builder: (context, setPickerState) {
+          Future<void> reloadFilteredTests() async {
+            setPickerState(() => isFetching = true);
+            final fetched = await testProvider.fetchTestsFiltered(
+              fanId: fanFilter,
+              kafedraId: kafedraFilter,
+            );
+            setPickerState(() {
+              currentDisplayTests = fetched;
+              isFetching = false;
+            });
+          }
+
+          final visibleTests = currentDisplayTests.where((t) {
+            final matchesSearch = searchQuery.isEmpty ||
+                t.name.toLowerCase().contains(searchQuery.toLowerCase());
+            return matchesSearch;
+          }).toList();
+
+          return AlertDialog(
+            backgroundColor: AppColors.cardDark,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: AppColors.goldPrimary, width: 1.5),
+            ),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.playlist_add_check, color: AppColors.goldPrimary),
+                    const SizedBox(width: 10),
+                    Text(
+                      'TESTLARNI TANLANG VA BIRLASHTIRING',
+                      style: AppTextStyles.titleHeader.copyWith(fontSize: 15),
+                    ),
+                  ],
+                ),
+                Text(
+                  '${tempSelectedIds.length} ta tanlandi',
+                  style: AppTextStyles.badgeText.copyWith(color: AppColors.goldPrimary, fontSize: 12),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 580,
+              height: 480,
+              child: Column(
+                children: [
+                  // Search Field
+                  TextField(
+                    onChanged: (val) => setPickerState(() => searchQuery = val),
+                    style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary),
+                    decoration: _inputDecoration('Test nomini qidirish...').copyWith(
+                      prefixIcon: const Icon(Icons.search, color: AppColors.goldPrimary, size: 20),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Fan & Kafedra Filter Dropdowns
+                  Row(
+                    children: [
+                      // FAN FILTER
+                      Expanded(
+                        child: _buildDropdownContainer(
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String?>(
+                              value: fanFilter,
+                              dropdownColor: AppColors.cardDark,
+                              isExpanded: true,
+                              hint: const Text('Barcha fanlar', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                              items: [
+                                const DropdownMenuItem<String?>(value: null, child: Text('Barcha fanlar', style: TextStyle(color: AppColors.textMuted, fontSize: 12))),
+                                ...testProvider.fans.entries.map((e) => DropdownMenuItem<String?>(
+                                      value: e.key,
+                                      child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)),
+                                    )),
+                              ],
+                              onChanged: (val) {
+                                fanFilter = val;
+                                reloadFilteredTests();
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+
+                      // KAFEDRA FILTER
+                      Expanded(
+                        child: _buildDropdownContainer(
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String?>(
+                              value: kafedraFilter,
+                              dropdownColor: AppColors.cardDark,
+                              isExpanded: true,
+                              hint: const Text('Barcha kafedralar', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                              items: [
+                                const DropdownMenuItem<String?>(value: null, child: Text('Barcha kafedralar', style: TextStyle(color: AppColors.textMuted, fontSize: 12))),
+                                ...testProvider.kafedras.entries.map((e) => DropdownMenuItem<String?>(
+                                      value: e.key,
+                                      child: Text(e.value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)),
+                                    )),
+                              ],
+                              onChanged: (val) {
+                                kafedraFilter = val;
+                                reloadFilteredTests();
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Jami: ${visibleTests.length} ta test topildi',
+                        style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted),
+                      ),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              setPickerState(() {
+                                for (var t in visibleTests) {
+                                  tempSelectedIds.add(t.id);
+                                }
+                              });
+                            },
+                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+                            child: const Text('BARCHASINI BELGILASH', style: TextStyle(fontSize: 11, color: AppColors.goldPrimary)),
+                          ),
+                          const SizedBox(width: 12),
+                          TextButton(
+                            onPressed: () {
+                              setPickerState(() => tempSelectedIds.clear());
+                            },
+                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+                            child: const Text('TOZALASH', style: TextStyle(fontSize: 11, color: AppColors.error)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Tests Checklist
+                  Expanded(
+                    child: isFetching
+                        ? const Center(child: CircularProgressIndicator(color: AppColors.goldPrimary))
+                        : visibleTests.isEmpty
+                            ? const Center(
+                                child: Text('Testlar topilmadi', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                              )
+                            : Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.inputBackground,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.cardBorder),
+                                ),
+                                child: ListView.separated(
+                                  itemCount: visibleTests.length,
+                                  separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.cardBorder),
+                                  itemBuilder: (context, index) {
+                                    final test = visibleTests[index];
+                                    final isChecked = tempSelectedIds.contains(test.id);
+                                    final fanName = testProvider.fans[test.fanId] ?? '';
+
+                                    return CheckboxListTile(
+                                      dense: true,
+                                      value: isChecked,
+                                      activeColor: AppColors.goldPrimary,
+                                      checkColor: AppColors.backgroundDark,
+                                      title: Text(
+                                        test.name,
+                                        style: TextStyle(
+                                          color: isChecked ? AppColors.goldPrimary : AppColors.textPrimary,
+                                          fontWeight: isChecked ? FontWeight.bold : FontWeight.normal,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      subtitle: fanName.isNotEmpty
+                                          ? Text('Fan: $fanName', style: const TextStyle(color: AppColors.textMuted, fontSize: 11))
+                                          : null,
+                                      onChanged: (val) {
+                                        setPickerState(() {
+                                          if (val == true) {
+                                            tempSelectedIds.add(test.id);
+                                          } else {
+                                            tempSelectedIds.remove(test.id);
+                                          }
+                                        });
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(modalContext).pop(),
+                child: Text('BEKOR QILISH', style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.goldPrimary,
+                  foregroundColor: AppColors.backgroundDark,
+                ),
+                onPressed: () {
+                  Navigator.of(modalContext).pop(
+                    _MultiTestPickerResult(
+                      selectedTestIds: tempSelectedIds,
+                      fanId: fanFilter,
+                      kafedraId: kafedraFilter,
+                      testsList: currentDisplayTests,
+                    ),
+                  );
+                },
+                child: Text('TAYYOR (${tempSelectedIds.length})'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // CONFIRM DISABLE DIALOG (PATCH /api/exams/{id}/disable)
+  void _confirmDisableDialog(BuildContext context, String id, ExamProvider provider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardDark,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: AppColors.goldPrimary)),
         title: Row(
           children: [
-            const Icon(Icons.code_outlined, color: AppColors.goldPrimary),
-            const SizedBox(width: 10),
-            Text('${exam.name} — POST API Payload', style: AppTextStyles.titleHeader.copyWith(fontSize: 15)),
+            const Icon(Icons.pause_circle_outline, color: AppColors.warning),
+            const SizedBox(width: 8),
+            Text('IMTIHONNI TO\'XTATISH', style: AppTextStyles.titleHeader.copyWith(color: AppColors.warning, fontSize: 16)),
           ],
         ),
-        content: SizedBox(
-          width: 440,
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.inputBackground,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.goldPrimary.withValues(alpha: 0.5)),
-            ),
-            child: Text(
-              jsonStr,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: AppColors.goldPrimary),
-            ),
-          ),
+        content: Text(
+          'Imtihon seansini to\'xtatishni va talabalar uchun yopishni tasdiqlaysizmi?',
+          style: AppTextStyles.bodyText,
         ),
         actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.goldPrimary, foregroundColor: AppColors.backgroundDark),
+          TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('YOPISH'),
+            child: const Text('BEKOR QILISH'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.warning, foregroundColor: AppColors.backgroundDark),
+            onPressed: () async {
+              final success = await provider.disableExam(id);
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? "Imtihon muvaffaqiyatli to'xtatildi va talabalar uchun yopildi"
+                          : "Imtihonni to'xtatishda xatolik yuz berdi!",
+                    ),
+                    backgroundColor: success ? AppColors.emeraldAccent : AppColors.error,
+                  ),
+                );
+              }
+            },
+            child: const Text('TO\'XTATISH'),
           ),
         ],
       ),
@@ -800,7 +1088,7 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardDark,
         title: Text('IMTIHONNI O\'CHIRISH', style: AppTextStyles.titleHeader.copyWith(color: AppColors.error)),
-        content: Text('Haqiqatan ham ushbu imtihon seansini o\'chirib tashlamoqchimisiz? (DELETE /api/exams/$id)', style: AppTextStyles.bodyText),
+        content: Text('Haqiqatan ham ushbu imtihon seansini o\'chirib tashlamoqchimisiz?', style: AppTextStyles.bodyText),
         actions: [
           TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('BEKOR QILISH')),
           ElevatedButton(
@@ -843,4 +1131,18 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
       child: child,
     );
   }
+}
+
+class _MultiTestPickerResult {
+  final Set<String> selectedTestIds;
+  final String? fanId;
+  final String? kafedraId;
+  final List<TestModel> testsList;
+
+  _MultiTestPickerResult({
+    required this.selectedTestIds,
+    this.fanId,
+    this.kafedraId,
+    required this.testsList,
+  });
 }

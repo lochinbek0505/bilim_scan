@@ -99,6 +99,10 @@ class TestProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<List<TestModel>> fetchTestsFiltered({String? fanId, String? kafedraId}) async {
+    return await _service.getTests(fanId: fanId, kafedraId: kafedraId);
+  }
+
   Future<List<QuestionModel>> fetchQuestionsForTest(String testId) async {
     final questions = await _service.getQuestionsByTestId(testId);
     final index = _tests.indexWhere((t) => t.id == testId);

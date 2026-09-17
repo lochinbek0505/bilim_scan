@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+
 import '../models/exam_model.dart';
 import 'api_config.dart';
 import 'api_service.dart';
@@ -13,7 +14,9 @@ class ExamService {
       final response = await _apiService.dio.get(ApiConfig.exams);
       if (response.statusCode == 200 && response.data != null) {
         final List<dynamic> list = response.data as List<dynamic>;
-        return list.map((e) => ExamModel.fromJson(e as Map<String, dynamic>)).toList();
+        return list
+            .map((e) => ExamModel.fromJson(e as Map<String, dynamic>))
+            .toList();
       }
     } on DioException catch (e) {
       if (kDebugMode) {
@@ -26,12 +29,15 @@ class ExamService {
     }
     return [];
   }
+
   Future<List<ExamModel>> getExamAdmin() async {
     try {
       final response = await _apiService.dio.get(ApiConfig.adminExam);
       if (response.statusCode == 200 && response.data != null) {
         final List<dynamic> list = response.data as List<dynamic>;
-        return list.map((e) => ExamModel.fromJson(e as Map<String, dynamic>)).toList();
+        return list
+            .map((e) => ExamModel.fromJson(e as Map<String, dynamic>))
+            .toList();
       }
     } on DioException catch (e) {
       if (kDebugMode) {
@@ -60,7 +66,8 @@ class ExamService {
         ApiConfig.examCreate,
         data: exam.toCreateRequestJson(),
       );
-      if ((response.statusCode == 200 || response.statusCode == 201) && response.data != null) {
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          response.data != null) {
         return ExamModel.fromJson(response.data as Map<String, dynamic>);
       }
     } on DioException catch (e) {
@@ -107,6 +114,24 @@ class ExamService {
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ [EXAM SERVICE DELETE UNKNOWN ERR]: $e');
+      }
+    }
+    return false;
+  }
+
+  Future<bool> disableExam(String examSessionId) async {
+    try {
+      final response = await _apiService.dio.patch(
+        '${ApiConfig.exams}/$examSessionId/disable',
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [EXAM SERVICE DISABLE ERR]: ${e.message}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [EXAM SERVICE DISABLE UNKNOWN ERR]: $e');
       }
     }
     return false;

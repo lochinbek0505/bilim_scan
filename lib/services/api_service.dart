@@ -40,7 +40,7 @@ class ApiService {
 
           if (kDebugMode) {
             debugPrint(
-              '🌐 [API REQ] ${options.method} -> ${options.baseUrl}${options.path}',
+              '🌐 [API REQ] ${options.method} -> ${options.uri}',
             );
             if (options.headers.containsKey('Authorization')) {
               debugPrint('🔑 [API AUTH] Token attached');
@@ -54,7 +54,7 @@ class ApiService {
         onResponse: (response, handler) {
           if (kDebugMode) {
             debugPrint(
-              '✅ [API RESP] ${response.statusCode} <- ${response.requestOptions.path}',
+              '✅ [API RESP] ${response.statusCode} <- ${response.requestOptions.uri}',
             );
           }
           return handler.next(response);

@@ -200,6 +200,23 @@ class ExamProvider extends ChangeNotifier {
     return success;
   }
 
+  Future<bool> disableExam(String id) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final success = await _service.disableExam(id);
+    if (success) {
+      final index = _exams.indexWhere((e) => e.id == id);
+      if (index != -1) {
+        _exams[index] = _exams[index].copyWith(active: false, status: 'YAKUNLANGAN');
+      }
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return success;
+  }
+
   void changeStatus(String id, String newStatus) {
     final index = _exams.indexWhere((e) => e.id == id);
     if (index != -1) {
