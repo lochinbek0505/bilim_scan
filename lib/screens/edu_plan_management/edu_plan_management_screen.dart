@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -44,7 +43,7 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'O\'QUV REJALARI VA FILTRLASH (EDU PLAN CRUD)',
+                'O\'QUV REJALARI VA FILTRLASH',
                 style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textPrimary),
               ),
               Text(
@@ -249,8 +248,12 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
   }
 
   Widget _buildEduPlanCard(BuildContext context, EduPlanModel plan, EduPlanProvider provider) {
-    final fanName = provider.fans[plan.fanId] ?? plan.fanId;
-    final kafedraName = provider.kafedras[plan.kafedraId] ?? plan.kafedraId;
+    final fanName = (provider.fans[plan.fanId] != null && provider.fans[plan.fanId]!.isNotEmpty)
+        ? provider.fans[plan.fanId]!
+        : 'Noma\'lum fan';
+    final kafedraName = (provider.kafedras[plan.kafedraId] != null && provider.kafedras[plan.kafedraId]!.isNotEmpty)
+        ? provider.kafedras[plan.kafedraId]!
+        : 'Noma\'lum kafedra';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -359,13 +362,12 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
     );
   }
 
-  // CREATE / EDIT EDU PLAN DIALOG (EXCEL .xlsx & JSON PARSER INTEGRATED)
+  // CREATE / EDIT EDU PLAN DIALOG (EXCEL .xlsx INTEGRATED)
   void _showEduPlanFormDialog(BuildContext context, EduPlanModel? planToEdit) {
     final eduPlanProvider = Provider.of<EduPlanProvider>(context, listen: false);
     final catalogProvider = Provider.of<CatalogProvider>(context, listen: false);
 
     final nameController = TextEditingController(text: planToEdit?.name ?? '');
-    final jsonImportController = TextEditingController();
 
     List<DropdownMenuItem<String>> buildUniqueFanItems() {
       final Map<String, String> itemMap = {};
@@ -452,7 +454,7 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  planToEdit == null ? 'YANGI O\'QUV REJA YARATISH (/api/edu-plans)' : 'O\'QUV REJANI TAHRIRLASH',
+                  planToEdit == null ? 'YANGI O\'QUV REJA YARATISH' : 'O\'QUV REJANI TAHRIRLASH',
                   style: AppTextStyles.titleHeader.copyWith(fontSize: 16),
                 ),
               ],
@@ -464,7 +466,7 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildFormLabel('O\'QUV REJA NOMI (NAME)'),
+                    _buildFormLabel('O\'QUV REJA NOMI'),
                     const SizedBox(height: 4),
                     TextField(
                       controller: nameController,
@@ -480,7 +482,7 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFormLabel('FAN (fanId)'),
+                              _buildFormLabel('FAN'),
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
@@ -506,7 +508,7 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFormLabel('KAFEDRA (kafedraId)'),
+                              _buildFormLabel('KAFEDRA'),
                               const SizedBox(height: 4),
                               _buildDropdownContainer(
                                 child: DropdownButtonHideUnderline(
@@ -530,7 +532,7 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
 
                     const SizedBox(height: 14),
 
-                    _buildFormLabel('O\'QUV YILI (oquvYili)'),
+                    _buildFormLabel('O\'QUV YILI'),
                     const SizedBox(height: 4),
                     _buildDropdownContainer(
                       child: DropdownButtonHideUnderline(
@@ -553,11 +555,11 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                     const Divider(color: AppColors.cardBorder),
                     const SizedBox(height: 10),
 
-                    // EXCEL (.xlsx) AND JSON IMPORT SECTION
+                    // EXCEL (.xlsx) IMPORT SECTION
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildFormLabel('MAVZULAR FAYLI (EXCEL .xlsx / JSON IMPORT)'),
+                        _buildFormLabel('MAVZULAR FAYLI (EXCEL .xlsx)'),
                         Text('${currentTopics.length} ta mavzu yuklangan', style: AppTextStyles.badgeText.copyWith(color: const Color(0xFF14B8A6))),
                       ],
                     ),
@@ -576,104 +578,39 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                         try {
                           final PlatformFile? file = await FilePicker.pickFile(
                             type: FileType.custom,
-                            allowedExtensions: ['xlsx', 'xls', 'json'],
+                            allowedExtensions: ['xlsx', 'xls'],
                           );
 
                           if (file != null) {
-                            if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-                              // Read Excel Bytes
-                              final bytes = file.path != null && file.path!.isNotEmpty
-                                  ? await File(file.path!).readAsBytes()
-                                  : await file.readAsBytes();
+                            // Read Excel Bytes
+                            final bytes = file.path != null && file.path!.isNotEmpty
+                                ? await File(file.path!).readAsBytes()
+                                : await file.readAsBytes();
 
-                              final parsed = eduPlanProvider.parseTopicsFromExcelBytes(bytes);
-                              final extractedTitle = parsed['title'] as String? ?? '';
-                              final extractedTopics = parsed['topics'] as List<EduPlanTopicModel>? ?? [];
+                            final parsed = eduPlanProvider.parseTopicsFromExcelBytes(bytes);
+                            final extractedTitle = parsed['title'] as String? ?? '';
+                            final extractedTopics = parsed['topics'] as List<EduPlanTopicModel>? ?? [];
 
-                              setModalState(() {
-                                if (extractedTitle.isNotEmpty && nameController.text.isEmpty) {
-                                  nameController.text = extractedTitle;
-                                }
-                                currentTopics = extractedTopics;
-                              });
-
-                              if (dialogContext.mounted) {
-                                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                  SnackBar(
-                                    content: Text('✔ Excel faylidan ${extractedTopics.length} ta mavzu va reja nomi muvaffaqiyatli o\'qindi!'),
-                                    backgroundColor: const Color(0xFF14B8A6),
-                                  ),
-                                );
+                            setModalState(() {
+                              if (extractedTitle.isNotEmpty && nameController.text.isEmpty) {
+                                nameController.text = extractedTitle;
                               }
-                            } else if (file.name.endsWith('.json')) {
-                              final jsonStr = file.path != null && file.path!.isNotEmpty
-                                  ? await File(file.path!).readAsString()
-                                  : utf8.decode(await file.readAsBytes());
+                              currentTopics = extractedTopics;
+                            });
 
-                              jsonImportController.text = jsonStr;
-                              final parsedTopics = eduPlanProvider.parseTopicsFromJson(jsonStr);
-
-                              setModalState(() {
-                                currentTopics = parsedTopics;
-                              });
-
-                              if (dialogContext.mounted) {
-                                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                  SnackBar(
-                                    content: Text('✔ JSON faylidan ${parsedTopics.length} ta mavzu muvaffaqiyatli o\'qindi!'),
-                                    backgroundColor: const Color(0xFF14B8A6),
-                                  ),
-                                );
-                              }
+                            if (dialogContext.mounted) {
+                              ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                SnackBar(
+                                  content: Text('✔ Excel faylidan ${extractedTopics.length} ta mavzu va reja nomi muvaffaqiyatli o\'qindi!'),
+                                  backgroundColor: const Color(0xFF14B8A6),
+                                ),
+                              );
                             }
                           }
                         } catch (e) {
                           if (dialogContext.mounted) {
                             ScaffoldMessenger.of(dialogContext).showSnackBar(
                               SnackBar(content: Text('Faylni o\'qishda xatolik: $e'), backgroundColor: AppColors.error),
-                            );
-                          }
-                        }
-                      },
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    TextField(
-                      controller: jsonImportController,
-                      maxLines: 3,
-                      style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textPrimary, fontFamily: 'monospace'),
-                      decoration: InputDecoration(
-                        hintText: 'Yoki JSON matnini bu yerga joylashtiring...',
-                        hintStyle: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted),
-                        filled: true,
-                        fillColor: AppColors.inputBackground,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.cardBorder)),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.file_upload_outlined, size: 16),
-                      label: const Text('MATNNI PARSE QILISH'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.emeraldPrimary,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        final rawJson = jsonImportController.text.trim();
-                        if (rawJson.isNotEmpty) {
-                          final parsed = eduPlanProvider.parseTopicsFromJson(rawJson);
-                          if (parsed.isNotEmpty) {
-                            setModalState(() {
-                              currentTopics = parsed;
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('${parsed.length} ta mavzu muvaffaqiyatli yuklandi!'), backgroundColor: const Color(0xFF14B8A6)),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('JSON formati noto\'g\'ri!'), backgroundColor: AppColors.error),
                             );
                           }
                         }

@@ -144,7 +144,19 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
     String fileName = "${guruh.name ?? 'Guruh'}_Natijalari".trim();
 
     if (mounted) Navigator.pop(context);
-    await PdfExportService.exportResultsToPdf(groupExportData, fileName);
+
+    if (groupExportData.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Export qilish uchun ma'lumot topilmadi!")));
+      }
+      return;
+    }
+
+    await PdfExportService.exportGroupToZip(
+      groupName: guruh.name ?? 'Guruh',
+      students: groupExportData,
+      zipFileName: fileName,
+    );
   }
 
   Future<void> _exportBosqich(CatalogResponse bosqich) async {
@@ -152,12 +164,32 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
     final groupsInBosqich = catalogProv.guruhlar.where((g) => g.bosqich?.id == bosqich.id).toList();
     
     final userProv = context.read<UserProvider>();
-    List<UserResponseDto> usersInBosqich = [];
+
+    Map<String, List<UserResponseDto>> groupUsersMap = {};
+
     for (var g in groupsInBosqich) {
-       usersInBosqich.addAll(userProv.users.where((u) => u.guruh?.id == g.id));
+      final usersInGuruh = userProv.users.where((u) => u.guruh?.id == g.id).toList();
+      if (usersInGuruh.isNotEmpty) {
+        groupUsersMap[g.name ?? 'Guruh'] = usersInGuruh;
+      }
     }
 
-    if (usersInBosqich.isEmpty) {
+    final usersInBosqichAll = userProv.users.where((u) => u.bosqich?.id == bosqich.id).toList();
+    for (var u in usersInBosqichAll) {
+      bool alreadyAdded = false;
+      for (var list in groupUsersMap.values) {
+        if (list.any((existing) => existing.id == u.id)) {
+          alreadyAdded = true;
+          break;
+        }
+      }
+      if (!alreadyAdded) {
+        final gName = u.guruh?.name ?? "Guruhsiz";
+        groupUsersMap.putIfAbsent(gName, () => []).add(u);
+      }
+    }
+
+    if (groupUsersMap.isEmpty || groupUsersMap.values.every((l) => l.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Ushbu bosqichda kursantlar mavjud emas!")));
       return;
     }
@@ -172,20 +204,40 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
       ),
     );
 
-    List<StudentExportData> exportDataList = [];
+    Map<String, List<StudentExportData>> groupExportDataMap = {};
     
-    for (var user in usersInBosqich) {
-       final mData = await _monitoringService.getStudentMonitoring(user.id ?? '');
-       if (mData != null) {
-         String? base64Img = await _fetchImageBase64(user.profileImageUrl);
-         exportDataList.add(StudentExportData(student: user, base64Image: base64Img, monitoringData: mData));
-       }
+    for (var entry in groupUsersMap.entries) {
+      final gName = entry.key;
+      final users = entry.value;
+      List<StudentExportData> list = [];
+      for (var user in users) {
+        final mData = await _monitoringService.getStudentMonitoring(user.id ?? '');
+        if (mData != null) {
+          String? base64Img = await _fetchImageBase64(user.profileImageUrl);
+          list.add(StudentExportData(student: user, base64Image: base64Img, monitoringData: mData));
+        }
+      }
+      if (list.isNotEmpty) {
+        groupExportDataMap[gName] = list;
+      }
     }
 
     String fileName = "${bosqich.name ?? 'Bosqich'}_Natijalari".trim();
 
     if (mounted) Navigator.pop(context);
-    await PdfExportService.exportResultsToPdf(exportDataList, fileName);
+
+    if (groupExportDataMap.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Export qilish uchun ma'lumot topilmadi!")));
+      }
+      return;
+    }
+
+    await PdfExportService.exportBosqichToZip(
+      bosqichName: bosqich.name ?? 'Bosqich',
+      groupStudentsMap: groupExportDataMap,
+      zipFileName: fileName,
+    );
   }
 
   Future<void> _fetchStudentMonitoring(String studentId, [UserResponseDto? user]) async {

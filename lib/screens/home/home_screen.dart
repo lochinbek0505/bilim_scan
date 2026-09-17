@@ -256,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildAdminModuleCard(
                         title: '5. O\'QUV REJALARI',
                         subtitle:
-                            'Yillik va semestrlik o\'quv rejalari, soatlar taqsimoti, mavzular va JSON fayl importi',
+                            'Yillik va semestrlik o\'quv rejalari, soatlar taqsimoti, mavzular hamda Excel fayl importi',
                         badgeText: 'O\'quv reja',
                         icon: Icons.calendar_month_outlined,
                         accentColor: const Color(0xFF14B8A6),
