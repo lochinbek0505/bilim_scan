@@ -1,22 +1,23 @@
 import 'package:bilim_scan/providers/test_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants/app_colors.dart';
+
 import '../../core/constants/app_assets.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../providers/auth_provider.dart';
-import '../test_management/test_management_screen.dart';
+import '../../providers/catalog_provider.dart';
+import '../../providers/exam_provider.dart';
+import '../../providers/user_provider.dart';
+import '../../services/statistics_service.dart';
+import '../catalog_management/catalog_management_screen.dart';
 import '../edu_plan_management/edu_plan_management_screen.dart';
 import '../exam_management/exam_management_screen.dart';
-import '../catalog_management/catalog_management_screen.dart';
-import '../user_management/user_management_screen.dart';
 import '../monitoring/student_monitoring_screen.dart';
 import '../statistics/statistics_screen.dart';
-import '../../providers/catalog_provider.dart';
-import '../../providers/user_provider.dart';
-import '../../providers/exam_provider.dart';
-import '../../services/statistics_service.dart';
+import '../test_management/test_management_screen.dart';
+import '../user_management/user_management_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -47,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -56,15 +58,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: AppColors.backgroundSecondary.withValues(alpha: 0.95),
+          backgroundColor: AppColors.backgroundSecondary.withValues(
+            alpha: 0.95,
+          ),
           elevation: 4,
           title: Row(
             children: [
-              Image.asset(
-                AppAssets.ivvLogo,
-                width: 36,
-                height: 36,
-              ),
+              Image.asset(AppAssets.ivvLogo, width: 36, height: 36),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,7 +107,9 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: AppColors.goldPrimary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.goldPrimary.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: AppColors.goldPrimary.withValues(alpha: 0.5),
+                ),
               ),
               child: Row(
                 children: [
@@ -189,27 +191,35 @@ class _HomeScreenState extends State<HomeScreen> {
                       // 1. Imtihon Yaratish & Boshqarish
                       _buildAdminModuleCard(
                         title: '1. IMTIHON YARATISH',
-                        subtitle: 'Mavjud testlar va guruhlar asosida imtihon seanslarini biriktirish va sozlash',
+                        subtitle:
+                            'Mavjud testlar va guruhlar asosida imtihon seanslarini biriktirish va sozlash',
                         badgeText: 'Imtihonlar',
                         icon: Icons.note_add_outlined,
                         accentColor: AppColors.goldPrimary,
                         onTap: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const ExamManagementScreen()),
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const ExamManagementScreen(),
+                            ),
                           );
                         },
                       ),
 
                       // 2. Test Yaratish
                       _buildAdminModuleCard(
-                        title: '2. TESTLARNI BOSHQARISH (CRUD)',
-                        subtitle: 'Elektron va skanerlanadigan diagnostika testlar bankini shakllantirish hamda JSON fayldan savollarni yuklash',
+                        title: '2. TESTLARNI BOSHQARISH ',
+                        subtitle:
+                            'Elektron va skanerlanadigan diagnostika testlar bankini shakllantirish hamda JSON fayldan savollarni yuklash',
                         badgeText: 'Test Banki',
                         icon: Icons.assignment_add,
                         accentColor: AppColors.emeraldAccent,
                         onTap: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const TestManagementScreen()),
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const TestManagementScreen(),
+                            ),
                           );
                         },
                       ),
@@ -217,131 +227,99 @@ class _HomeScreenState extends State<HomeScreen> {
                       // 3. Test Natijalari
                       _buildAdminModuleCard(
                         title: '3. TEST NATIJALARI',
-                        subtitle: 'Skanerlangan test va elektron diagnostika javoblarini ko\'rish',
+                        subtitle:
+                            'Skanerlangan test va elektron diagnostika javoblarini ko\'rish',
                         badgeText: 'Natijalar',
                         icon: Icons.fact_check_outlined,
                         accentColor: const Color(0xFF0EA5E9),
                         onTap: () => _showTestResultsDialog(context),
                       ),
 
-                      // 4. User Yaratish
                       _buildAdminModuleCard(
                         title: '4. USERLARNI BOSHQARISH (CRUD)',
-                        subtitle: 'O\'quvchilar, o\'qituvchilar va administratorlar hisoblarini boshqarish',
+                        subtitle:
+                            'O\'quvchilar, o\'qituvchilar va administratorlar hisoblarini boshqarish',
                         badgeText: 'Foydalanuvchilar',
                         icon: Icons.person_add_alt_1_outlined,
                         accentColor: AppColors.warning,
                         onTap: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const UserManagementScreen()),
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const UserManagementScreen(),
+                            ),
                           );
                         },
                       ),
 
                       // 5. O'quv Reja
                       _buildAdminModuleCard(
-                        title: '5. O\'QUV REJALARI (EDU PLAN CRUD)',
-                        subtitle: 'Yillik va semestrlik o\'quv rejalari, soatlar taqsimoti, mavzular va JSON fayl importi',
+                        title: '5. O\'QUV REJALARI',
+                        subtitle:
+                            'Yillik va semestrlik o\'quv rejalari, soatlar taqsimoti, mavzular va JSON fayl importi',
                         badgeText: 'O\'quv reja',
                         icon: Icons.calendar_month_outlined,
                         accentColor: const Color(0xFF14B8A6),
                         onTap: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const EduPlanManagementScreen()),
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const EduPlanManagementScreen(),
+                            ),
                           );
                         },
                       ),
 
-                      // 6. Kurs Bosqichi
                       _buildAdminModuleCard(
-                        title: '6. KURS BOSQICHI',
-                        subtitle: '1-kurs va 2-kurs bosqichlari ma\'lumotnomasi va tahrirlash',
-                        badgeText: 'Bosqichlar',
-                        icon: Icons.stairs_outlined,
-                        accentColor: const Color(0xFF8B5CF6),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const CatalogManagementScreen(initialTabIndex: 0)),
-                          );
-                        },
-                      ),
-
-                      // 7. Guruhlar
-                      _buildAdminModuleCard(
-                        title: '7. GURUHLAR BOSHQARUVI',
-                        subtitle: 'Akademik litsey o\'quv guruhlari ro\'yxati, yaratish va tahrirlash',
-                        badgeText: 'Guruhlar',
-                        icon: Icons.groups_3_outlined,
-                        accentColor: const Color(0xFFA855F7),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const CatalogManagementScreen(initialTabIndex: 2)),
-                          );
-                        },
-                      ),
-
-                      // 8. Kafedra
-                      _buildAdminModuleCard(
-                        title: '8. KAFEDRALAR',
-                        subtitle: 'Informatika va AT, Tillar hamda Aniqlik fanlar kafedralari katalogi',
-                        badgeText: 'Kafedralar',
-                        icon: Icons.account_balance_outlined,
-                        accentColor: AppColors.emeraldAccent,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const CatalogManagementScreen(initialTabIndex: 3)),
-                          );
-                        },
-                      ),
-
-                      // 9. Fanlar
-                      _buildAdminModuleCard(
-                        title: '9. FANLAR KATALOGI',
-                        subtitle: 'O\'quv fanlari katalogini yaratish, tahrirlash va o\'chirish',
-                        badgeText: 'Fanlar',
-                        icon: Icons.menu_book_outlined,
+                        title: '6. STURUKTURA BOSHQARUVI',
+                        subtitle:
+                            'Bosqichlar , guruhlar , kafedralar va fanlar , yaratish, tahrirlash va o\'chirish',
+                        badgeText: 'Sturuktura',
+                        icon: Icons.account_tree,
                         accentColor: AppColors.goldPrimary,
                         onTap: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const CatalogManagementScreen(initialTabIndex: 1)),
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const CatalogManagementScreen(
+                                    initialTabIndex: 1,
+                                  ),
+                            ),
                           );
                         },
-                      ),
-
-                      // 10. Tahlil
-                      _buildAdminModuleCard(
-                        title: '10. BILIMDAGI BO\'SHLIQLAR TAHLILI',
-                        subtitle: 'O\'quvchilarning bilim bo\'shliqlarini avtomatik diagnostika qilish',
-                        badgeText: 'AI Tahlil',
-                        icon: Icons.psychology_outlined,
-                        accentColor: const Color(0xFFEC4899),
-                        onTap: () => _showAnalysisDialog(context),
                       ),
 
                       // 11. Statistika
                       _buildAdminModuleCard(
-                        title: '11. STATISTIKA VA ANALITIKA',
-                        subtitle: 'Litsey, bosqichlar, guruhlar va fanlar bo\'yicha tahliliy hisobot hamda dachbord',
+                        title: '7. STATISTIKA VA ANALITIKA',
+                        subtitle:
+                            'Litsey, bosqichlar, guruhlar va fanlar bo\'yicha tahliliy hisobot hamda dachbord',
                         badgeText: 'Analitika',
                         icon: Icons.bar_chart_rounded,
                         accentColor: const Color(0xFF3B82F6),
                         onTap: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const StatisticsScreen()),
+                            MaterialPageRoute(
+                              builder: (context) => const StatisticsScreen(),
+                            ),
                           );
                         },
                       ),
 
                       // 12. Monitoring
                       _buildAdminModuleCard(
-                        title: '12. KURSANTLAR MONITORINGI',
-                        subtitle: 'Alohida o\'quvchilar va guruhlar kesimida shaxsiy o\'zlashtirish monitoringi',
+                        title: '8. KURSANTLAR MONITORINGI',
+                        subtitle:
+                            'Alohida o\'quvchilar va guruhlar kesimida shaxsiy o\'zlashtirish monitoringi',
                         badgeText: 'Monitoring',
                         icon: Icons.person_search_outlined,
                         accentColor: AppColors.goldPrimary,
                         onTap: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const StudentMonitoringScreen()),
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const StudentMonitoringScreen(),
+                            ),
                           );
                         },
                       ),
@@ -402,7 +380,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.emeraldPrimary.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(4),
@@ -439,15 +420,23 @@ class _HomeScreenState extends State<HomeScreen> {
     return Consumer3<UserProvider, CatalogProvider, ExamProvider>(
       builder: (context, userProv, catalogProv, examProv, child) {
         final studentCount = userProv.users.length;
-        final displayStudentCount = studentCount > 0 ? '$studentCount ta o\'quvchi' : '250+ o\'quvchi';
+        final displayStudentCount = studentCount > 0
+            ? '$studentCount ta o\'quvchi'
+            : '250+ o\'quvchi';
 
         final groupCount = catalogProv.guruhlar.length;
-        final displayGroupCount = groupCount > 0 ? '$groupCount ta guruh' : '12 ta guruh';
+        final displayGroupCount = groupCount > 0
+            ? '$groupCount ta guruh'
+            : '12 ta guruh';
 
         final kafedraCount = catalogProv.kafedralar.length;
-        final displayKafedraCount = kafedraCount > 0 ? '$kafedraCount ta kafedra' : '6 ta kafedra';
+        final displayKafedraCount = kafedraCount > 0
+            ? '$kafedraCount ta kafedra'
+            : '6 ta kafedra';
 
-        final totalExams = _apiTotalExams ?? (examProv.exams.isNotEmpty ? examProv.exams.length : 66);
+        final totalExams =
+            _apiTotalExams ??
+            (examProv.exams.isNotEmpty ? examProv.exams.length : 66);
         final displayExamCount = '$totalExams ta test';
 
         return Row(
@@ -586,16 +575,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         color: accentColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: accentColor.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Icon(icon, color: accentColor, size: 24),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: accentColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: accentColor.withValues(alpha: 0.4)),
+                        border: Border.all(
+                          color: accentColor.withValues(alpha: 0.4),
+                        ),
                       ),
                       child: Text(
                         badgeText,
@@ -651,11 +647,26 @@ class _HomeScreenState extends State<HomeScreen> {
       accentColor: AppColors.emeraldAccent,
       child: Column(
         children: [
-          _buildResultRow('10-25-guruh', 'Informatika diagnostikasi', '88% O\'zlashtirish', '25 ta test'),
+          _buildResultRow(
+            '10-25-guruh',
+            'Informatika diagnostikasi',
+            '88% O\'zlashtirish',
+            '25 ta test',
+          ),
           const SizedBox(height: 8),
-          _buildResultRow('1-O\'quv guruhi', 'Matematika nazorati', '76% O\'zlashtirish', '22 ta test'),
+          _buildResultRow(
+            '1-O\'quv guruhi',
+            'Matematika nazorati',
+            '76% O\'zlashtirish',
+            '22 ta test',
+          ),
           const SizedBox(height: 8),
-          _buildResultRow('2-O\'quv guruhi', 'Fizika va texnika', '82% O\'zlashtirish', '24 ta test'),
+          _buildResultRow(
+            '2-O\'quv guruhi',
+            'Fizika va texnika',
+            '82% O\'zlashtirish',
+            '24 ta test',
+          ),
         ],
       ),
     );
@@ -671,7 +682,10 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Algebra: 90% | Geometriya: 75% | Trigonometriya: 40%', style: AppTextStyles.bodyText),
+          Text(
+            'Algebra: 90% | Geometriya: 75% | Trigonometriya: 40%',
+            style: AppTextStyles.bodyText,
+          ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(12),
@@ -681,7 +695,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Text(
               'Tavsiya etiladi: Trigonometriya va funksiyalar bo\'yicha individual o\'quv materiallari berilsin.',
-              style: AppTextStyles.bodyText.copyWith(color: AppColors.goldPrimary, fontSize: 12),
+              style: AppTextStyles.bodyText.copyWith(
+                color: AppColors.goldPrimary,
+                fontSize: 12,
+              ),
             ),
           ),
         ],
@@ -698,9 +715,15 @@ class _HomeScreenState extends State<HomeScreen> {
       accentColor: const Color(0xFF3B82F6),
       child: Column(
         children: [
-          _buildSimpleListItem('Umumiy o\'zlashtirish ko\'rsatkichi', '84.2% (Yuqori dinamika)'),
+          _buildSimpleListItem(
+            'Umumiy o\'zlashtirish ko\'rsatkichi',
+            '84.2% (Yuqori dinamika)',
+          ),
           const SizedBox(height: 8),
-          _buildSimpleListItem('Eng yuqori ko\'rsatkichli guruh', '10-25-guruh (92% natija)'),
+          _buildSimpleListItem(
+            'Eng yuqori ko\'rsatkichli guruh',
+            '10-25-guruh (92% natija)',
+          ),
         ],
       ),
     );
@@ -729,19 +752,24 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: Text(
                 title,
-                style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textPrimary),
+                style: AppTextStyles.titleHeader.copyWith(
+                  fontSize: 16,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
           ],
         ),
-        content: SizedBox(
-          width: 480,
-          child: child,
-        ),
+        content: SizedBox(width: 480, child: child),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('BEKOR QILISH', style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted)),
+            child: Text(
+              'BEKOR QILISH',
+              style: AppTextStyles.bodyText.copyWith(
+                color: AppColors.textMuted,
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -756,7 +784,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildResultRow(String group, String subject, String score, String count) {
+  Widget _buildResultRow(
+    String group,
+    String subject,
+    String score,
+    String count,
+  ) {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -770,15 +803,38 @@ class _HomeScreenState extends State<HomeScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(group, style: AppTextStyles.bodyText.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-              Text(subject, style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted)),
+              Text(
+                group,
+                style: AppTextStyles.bodyText.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Text(
+                subject,
+                style: AppTextStyles.bodyText.copyWith(
+                  fontSize: 11,
+                  color: AppColors.textMuted,
+                ),
+              ),
             ],
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(score, style: AppTextStyles.badgeText.copyWith(color: AppColors.emeraldAccent)),
-              Text(count, style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted)),
+              Text(
+                score,
+                style: AppTextStyles.badgeText.copyWith(
+                  color: AppColors.emeraldAccent,
+                ),
+              ),
+              Text(
+                count,
+                style: AppTextStyles.bodyText.copyWith(
+                  fontSize: 11,
+                  color: AppColors.textMuted,
+                ),
+              ),
             ],
           ),
         ],
@@ -800,11 +856,27 @@ class _HomeScreenState extends State<HomeScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: AppTextStyles.bodyText.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-              Text(subtitle, style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted)),
+              Text(
+                title,
+                style: AppTextStyles.bodyText.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: AppTextStyles.bodyText.copyWith(
+                  fontSize: 11,
+                  color: AppColors.textMuted,
+                ),
+              ),
             ],
           ),
-          const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.goldPrimary),
+          const Icon(
+            Icons.arrow_forward_ios,
+            size: 14,
+            color: AppColors.goldPrimary,
+          ),
         ],
       ),
     );
