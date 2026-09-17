@@ -13,10 +13,10 @@ class StudentExamResultScreen extends StatelessWidget {
 
   String _getOverallStatus(double percentage, String rawLevel) {
     final level = rawLevel.toUpperCase();
-    if (level == 'HIGH_MASTERY' || percentage >= 80.0) {
+    if (percentage >= 85.0 || level == 'HIGH_MASTERY' || level == 'EXCELLENT' || level == 'PASSED_HIGH') {
+      return "O'ZLASHTIRGAN (A'LO)";
+    } else if (percentage >= 60.0 || level == 'PASSED' || level == 'SATISFACTORY' || level == 'GOOD') {
       return "O'ZLASHTIRGAN";
-    } else if (level == 'PASSED' || (percentage >= 60.0 && percentage < 80.0)) {
-      return "QONIQARLI";
     } else {
       return "O'ZLASHTIRMAGAN";
     }
@@ -24,10 +24,11 @@ class StudentExamResultScreen extends StatelessWidget {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case "O'ZLASHTIRGAN":
-        return AppColors.emeraldAccent;
-      case "QONIQARLI":
+      case "O'ZLASHTIRGAN (A'LO)":
         return AppColors.goldPrimary;
+      case "O'ZLASHTIRGAN":
+      case "QONIQARLI":
+        return AppColors.emeraldAccent;
       case "O'ZLASHTIRMAGAN":
       default:
         return AppColors.error;
@@ -36,10 +37,11 @@ class StudentExamResultScreen extends StatelessWidget {
 
   IconData _getStatusIcon(String status) {
     switch (status) {
+      case "O'ZLASHTIRGAN (A'LO)":
+        return Icons.stars_rounded;
       case "O'ZLASHTIRGAN":
-        return Icons.emoji_events_outlined;
       case "QONIQARLI":
-        return Icons.verified_outlined;
+        return Icons.emoji_events_outlined;
       case "O'ZLASHTIRMAGAN":
       default:
         return Icons.highlight_off_outlined;

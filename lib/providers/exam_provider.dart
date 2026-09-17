@@ -192,11 +192,16 @@ class ExamProvider extends ChangeNotifier {
   }
 
   Future<bool> deleteExam(String id) async {
+    _isLoading = true;
+    notifyListeners();
+
     final success = await _service.deleteExam(id);
     if (success) {
       _exams.removeWhere((e) => e.id == id);
-      notifyListeners();
     }
+    
+    _isLoading = false;
+    notifyListeners();
     return success;
   }
 

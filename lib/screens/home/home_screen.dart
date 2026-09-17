@@ -237,17 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       // 3. Test Natijalari
                       _buildAdminModuleCard(
-                        title: '3. TEST NATIJALARI',
-                        subtitle:
-                            'Skanerlangan test va elektron diagnostika javoblarini ko\'rish',
-                        badgeText: 'Natijalar',
-                        icon: Icons.fact_check_outlined,
-                        accentColor: const Color(0xFF0EA5E9),
-                        onTap: () => _showTestResultsDialog(context),
-                      ),
-
-                      _buildAdminModuleCard(
-                        title: '4. USERLARNI BOSHQARISH (CRUD)',
+                        title: '3. FOYDALANUVCHILARNI BOSHQARISH',
                         subtitle:
                             'O\'quvchilar, o\'qituvchilar va administratorlar hisoblarini boshqarish',
                         badgeText: 'Foydalanuvchilar',
@@ -265,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       // 5. O'quv Reja
                       _buildAdminModuleCard(
-                        title: '5. O\'QUV REJALARI',
+                        title: '4. O\'QUV REJALARI',
                         subtitle:
                             'Yillik va semestrlik o\'quv rejalari, soatlar taqsimoti, mavzular hamda Excel fayl importi',
                         badgeText: 'O\'quv reja',
@@ -282,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
 
                       _buildAdminModuleCard(
-                        title: '6. STURUKTURA BOSHQARUVI',
+                        title: '5. STURUKTURA BOSHQARUVI',
                         subtitle:
                             'Bosqichlar , guruhlar , kafedralar va fanlar , yaratish, tahrirlash va o\'chirish',
                         badgeText: 'Sturuktura',
@@ -302,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       // 11. Statistika
                       _buildAdminModuleCard(
-                        title: '7. STATISTIKA VA ANALITIKA',
+                        title: '6. STATISTIKA VA ANALITIKA',
                         subtitle:
                             'Litsey, bosqichlar, guruhlar va fanlar bo\'yicha tahliliy hisobot hamda dachbord',
                         badgeText: 'Analitika',
@@ -319,7 +309,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       // 12. Monitoring
                       _buildAdminModuleCard(
-                        title: '8. KURSANTLAR MONITORINGI',
+                        title: '7. KURSANTLAR MONITORINGI',
                         subtitle:
                             'Alohida o\'quvchilar va guruhlar kesimida shaxsiy o\'zlashtirish monitoringi',
                         badgeText: 'Monitoring',

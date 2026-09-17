@@ -23,6 +23,10 @@ class EduPlanProvider extends ChangeNotifier {
   Map<String, String> kafedras = {};
 
   late final List<String> oquvYillari;
+  final List<String> oquvOylari = [
+    'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr', 'Yanvar',
+    'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust'
+  ];
 
   bool get isLoading => _isLoading;
 
@@ -131,20 +135,16 @@ class EduPlanProvider extends ChangeNotifier {
 
     final result = await _service.createEduPlan(plan);
 
-    final newPlan = result ??
-        EduPlanModel(
-          id: 'plan_${DateTime.now().millisecondsSinceEpoch}',
-          name: plan.name,
-          fanId: plan.fanId,
-          kafedraId: plan.kafedraId,
-          oquvYili: plan.oquvYili,
-          topics: plan.topics,
-        );
+    if (result != null) {
+      _eduPlans.add(result);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    }
 
-    _eduPlans.add(newPlan);
     _isLoading = false;
     notifyListeners();
-    return true;
+    return false;
   }
 
   Future<bool> addEduPlan(EduPlanModel plan) => createEduPlan(plan);

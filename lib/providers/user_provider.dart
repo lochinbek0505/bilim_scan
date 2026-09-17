@@ -66,26 +66,16 @@ class UserProvider extends ChangeNotifier {
 
     final result = await _service.createUser(dto);
 
-    // Fallback local addition if server connection fails
-    final newObj = result ??
-        UserResponseDto(
-          id: 'user_${DateTime.now().millisecondsSinceEpoch}',
-          username: dto.username,
-          role: dto.role,
-          firstName: dto.firstName,
-          lastName: dto.lastName,
-          patronymic: dto.patronymic,
-          profileImageUrl: dto.profileImageUrl,
-          bosqich: dto.bosqichId != null ? CatalogResponse(id: dto.bosqichId, name: '1-Kurs') : null,
-          guruh: dto.guruhId != null ? GuruhModel(id: dto.guruhId, name: '10-25-guruh') : null,
-          kafedra: dto.kafedraId != null ? CatalogResponse(id: dto.kafedraId, name: 'Informatika kafedrasi') : null,
-          fan: dto.fanId != null ? FanModel(id: dto.fanId, name: 'Informatika') : null,
-        );
+    if (result != null) {
+      _users.add(result);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    }
 
-    _users.add(newObj);
     _isLoading = false;
     notifyListeners();
-    return true;
+    return false;
   }
 
   Future<bool> updateUser(String id, UserCreateDto dto) async {
@@ -121,10 +111,15 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<bool> deleteUser(String id) async {
-    await _service.deleteUser(id);
-    _users.removeWhere((u) => u.id == id);
+    _isLoading = true;
     notifyListeners();
-    return true;
+    final result = await _service.deleteUser(id);
+    if (result) {
+      _users.removeWhere((u) => u.id == id);
+    }
+    _isLoading = false;
+    notifyListeners();
+    return result;
   }
 
   void _loadInitialSampleData() {

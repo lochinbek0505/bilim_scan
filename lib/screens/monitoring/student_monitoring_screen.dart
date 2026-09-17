@@ -16,11 +16,14 @@ import '../../models/student_monitoring_model.dart';
 import '../../models/student_exam_model.dart';
 import '../../models/user_response_dto.dart';
 import '../../models/student_export_model.dart';
+import '../../models/test_model.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../services/api_config.dart';
 import '../../services/monitoring_service.dart';
+import '../../services/test_service.dart';
 import '../../services/pdf_export_service.dart';
+
 
 enum MonitoringStep { bosqich, guruh, user, natija }
 
@@ -38,6 +41,7 @@ class StudentMonitoringScreen extends StatefulWidget {
 
 class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
   final MonitoringService _monitoringService = MonitoringService();
+  final TestService _testService = TestService();
   final TextEditingController _idSearchController = TextEditingController();
 
   MonitoringStep _currentStep = MonitoringStep.bosqich;
@@ -264,7 +268,6 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
     }
   }
 
-  // Dialogs for ID button clicks
   Future<void> _showStudentDetailsModal(String studentId) async {
     showDialog(
       context: context,
@@ -286,6 +289,7 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
             ),
           ],
         ),
+
         content: FutureBuilder<UserResponseDto?>(
           future: _monitoringService.getUserDetails(studentId),
           builder: (context, snapshot) {
@@ -297,6 +301,7 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                 ),
               );
             }
+
             final user = snapshot.data ?? _selectedUser;
             return SingleChildScrollView(
               child: Column(
@@ -315,7 +320,6 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                   const SizedBox(height: 16),
                   _buildDetailRow('F.I.SH', user?.fullName ?? 'Noma\'lum'),
                   _buildDetailRow('Foydalanuvchi nomi', '@${user?.username ?? 'noma\'lum'}'),
-                  _buildDetailRow('ID', studentId, isId: true),
                   _buildDetailRow('Roli', user?.role ?? 'O\'QUVCHI'),
                   _buildDetailRow('Guruh', user?.guruh?.name ?? _selectedGuruh?.name ?? 'Biriktirilmagan'),
                   _buildDetailRow('Bosqich', user?.bosqich?.name ?? _selectedBosqich?.name ?? 'Biriktirilmagan'),
@@ -324,6 +328,7 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
             );
           },
         ),
+
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -334,12 +339,51 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
     );
   }
 
+  String _translateMastery(String? rawMastery, [num? percentage]) {
+    if (percentage != null && percentage >= 60.0) {
+      if (percentage >= 85.0) {
+        return "A'lo";
+      }
+      return "O'zlashtirdi";
+    }
+    if (rawMastery == null || rawMastery.trim().isEmpty) {
+      if (percentage != null && percentage < 60.0) {
+        return "O'zlashtirmadi";
+      }
+      return "Noma'lum";
+    }
+    final upper = rawMastery.toUpperCase().trim();
+    if (upper == 'HIGH_MASTERY' || upper == 'EXCELLENT' || upper == 'PASSED_HIGH' || upper == 'A\'LO') {
+      return "A'lo";
+    } else if (upper == 'PASSED' || upper == 'SATISFACTORY' || upper == 'GOOD' || upper == 'O\'ZLASHTIRDI') {
+      return "O'zlashtirdi";
+    } else if (upper == 'FAILED' || upper == 'FAIL' || upper == 'UNSATISFACTORY') {
+      return "O'zlashtirmadi";
+    }
+    return "O'zlashtirmadi";
+  }
+
+  Color _getMasteryColor(String? rawMastery, [num? percentage]) {
+    if (percentage != null) {
+      if (percentage >= 85.0) return AppColors.goldPrimary;
+      if (percentage >= 60.0) return AppColors.emeraldAccent;
+      return AppColors.error;
+    }
+    final upper = (rawMastery ?? '').toUpperCase().trim();
+    if (upper == 'HIGH_MASTERY' || upper == 'EXCELLENT' || upper == 'PASSED_HIGH') {
+      return AppColors.goldPrimary;
+    } else if (upper == 'PASSED' || upper == 'SATISFACTORY' || upper == 'GOOD') {
+      return AppColors.emeraldAccent;
+    }
+    return AppColors.error;
+  }
+
   String _getOverallStatus(double percentage, String rawLevel) {
     final level = rawLevel.toUpperCase();
-    if (level == 'HIGH_MASTERY' || level == 'EXCELLENT' || percentage >= 80.0) {
+    if (percentage >= 85.0 || level == 'HIGH_MASTERY' || level == 'EXCELLENT' || level == 'PASSED_HIGH') {
+      return "O'ZLASHTIRGAN (A'LO)";
+    } else if (percentage >= 60.0 || level == 'PASSED' || level == 'SATISFACTORY' || level == 'GOOD') {
       return "O'ZLASHTIRGAN";
-    } else if (level == 'PASSED' || (percentage >= 60.0 && percentage < 80.0)) {
-      return "QONIQARLI";
     } else {
       return "O'ZLASHTIRMAGAN";
     }
@@ -347,10 +391,11 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case "O'ZLASHTIRGAN":
-        return AppColors.emeraldAccent;
-      case "QONIQARLI":
+      case "O'ZLASHTIRGAN (A'LO)":
         return AppColors.goldPrimary;
+      case "O'ZLASHTIRGAN":
+      case "QONIQARLI":
+        return AppColors.emeraldAccent;
       case "O'ZLASHTIRMAGAN":
       default:
         return AppColors.error;
@@ -359,6 +404,8 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
 
   IconData _getStatusIcon(String status) {
     switch (status) {
+      case "O'ZLASHTIRGAN (A'LO)":
+        return Icons.stars_rounded;
       case "O'ZLASHTIRGAN":
         return Icons.emoji_events_outlined;
       case "QONIQARLI":
@@ -411,6 +458,7 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
             _monitoringService.getExamScore(examSessionId, studentId),
             _monitoringService.getExamSessionDetails(examSessionId),
             _monitoringService.getUserDetails(studentId),
+            _testService.getTests(),
           ]),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -423,7 +471,7 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                       CircularProgressIndicator(color: AppColors.goldPrimary),
                       SizedBox(height: 12),
                       Text(
-                        'Imtihon score so\'rovi yuborilmoqda...',
+                        'Imtihon ma\'lumotlari yuklanmoqda...',
                         style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                       ),
                     ],
@@ -435,6 +483,14 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
             final ExamResultResponse? scoreResult = snapshot.data?[0] as ExamResultResponse?;
             final ExamModel? sessionDetails = snapshot.data?[1] as ExamModel?;
             final UserResponseDto? userDetails = snapshot.data?[2] as UserResponseDto? ?? _selectedUser;
+            final List<TestModel> allTests = (snapshot.data?[3] as List<TestModel>?) ?? [];
+
+            final testObj = allTests.where((t) => t.id == sessionDetails?.testId).firstOrNull;
+            final testName = (testObj != null && testObj.name.isNotEmpty)
+                ? testObj.name
+                : (sessionDetails?.testName?.isNotEmpty == true
+                    ? sessionDetails!.testName!
+                    : (examObj?.examName ?? 'Fan bo\'yicha test'));
 
             final double pct = scoreResult?.percentage ?? examObj?.percentage?.toDouble() ?? 0.0;
             final String rawMastery = scoreResult?.masteryLevel ?? examObj?.masteryLevel ?? 'FAILED';
@@ -701,14 +757,15 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                           ),
                           const SizedBox(height: 8),
                           _buildDetailRow('Imtihon nomi', examObj?.examName ?? sessionDetails?.name ?? 'Imtihon'),
-                          _buildDetailRow('Sessiya kodi', examSessionId, isId: true),
-                          _buildDetailRow('Kursant kodi', studentId, isId: true),
+                          _buildDetailRow('Kursant', userDetails?.fullName ?? studentName),
+                          _buildDetailRow('Sessiya guruhi', sessionDetails?.guruh?.name ?? userDetails?.guruh?.name ?? groupName),
+                          _buildDetailRow('O\'quv yili', sessionDetails?.oquvYili ?? '2024-2025 o\'quv yili'),
+                          _buildDetailRow('Test nomi', testName),
                           if (scoreResult?.startedAt != null && scoreResult!.startedAt.isNotEmpty)
-                            _buildDetailRow('Boshlangan vaqt', scoreResult.startedAt),
+                            _buildDetailRow('Boshlangan vaqt', _formatDateTime(scoreResult.startedAt)),
                           if (scoreResult?.finishedAt != null && scoreResult!.finishedAt.isNotEmpty)
-                            _buildDetailRow('Tugallangan vaqt', scoreResult.finishedAt),
+                            _buildDetailRow('Tugallangan vaqt', _formatDateTime(scoreResult.finishedAt)),
                           if (sessionDetails != null) ...[
-                            _buildDetailRow('Test kodi', sessionDetails.testId, isId: true),
                             _buildDetailRow('Ajratilgan vaqt', '${sessionDetails.durationMinutes} daqiqa'),
                             _buildDetailRow('Savollar soni', '${sessionDetails.questionCount} ta'),
                             _buildDetailRow('Holati', sessionDetails.status),
@@ -770,7 +827,6 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildDetailRow('Fan nomi', fan?.name ?? subjectName),
-                _buildDetailRow('Fan ID', subjectId.isEmpty ? 'Kiritilmagan' : subjectId, isId: true),
                 _buildDetailRow('Kafedra', fan?.kafedra?.name ?? 'Informatika va AT kafedrasi'),
               ],
             );
@@ -784,6 +840,21 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
         ],
       ),
     );
+  }
+
+  String _formatDateTime(String? rawIso) {
+    if (rawIso == null || rawIso.trim().isEmpty) return 'Kiritilmagan';
+    try {
+      final dt = DateTime.parse(rawIso).toLocal();
+      final day = dt.day.toString().padLeft(2, '0');
+      final month = dt.month.toString().padLeft(2, '0');
+      final year = dt.year;
+      final hour = dt.hour.toString().padLeft(2, '0');
+      final minute = dt.minute.toString().padLeft(2, '0');
+      return '$day.$month.$year, $hour:$minute';
+    } catch (_) {
+      return rawIso;
+    }
   }
 
   Widget _buildDetailRow(String label, String value, {bool isId = false}) {
@@ -1697,20 +1768,26 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
   // Overall Summary Cards (Percentage & Mastery)
   Widget _buildOverallSummaryCards(StudentMonitoringModel data) {
     final pct = data.overallPercentage ?? 0.0;
-    final mastery = data.overallMastery ?? 'FAILED';
+    final rawMastery = (data.overallMastery ?? '').toUpperCase();
 
-    Color masteryColor = AppColors.error;
-    IconData masteryIcon = Icons.cancel_outlined;
-    String masteryText = 'O\'ZLASHTIRILMAGAN (FAILED)';
+    Color masteryColor;
+    IconData masteryIcon;
+    String masteryText;
 
-    if (mastery == 'PASSED') {
-      masteryColor = AppColors.emeraldAccent;
-      masteryIcon = Icons.check_circle_outline_rounded;
-      masteryText = 'O\'ZLASHTIRILGAN (PASSED)';
-    } else if (mastery == 'EXCELLENT') {
-      masteryColor = AppColors.goldPrimary;
-      masteryIcon = Icons.stars_rounded;
-      masteryText = 'A\'LO O\'ZLASHTIRILGAN';
+    if (pct >= 60.0 || rawMastery == 'PASSED' || rawMastery == 'EXCELLENT' || rawMastery == 'HIGH_MASTERY' || rawMastery == 'PASSED_HIGH') {
+      if (pct >= 85.0 || rawMastery == 'EXCELLENT' || rawMastery == 'HIGH_MASTERY') {
+        masteryColor = AppColors.goldPrimary;
+        masteryIcon = Icons.stars_rounded;
+        masteryText = 'A\'LO O\'ZLASHTIRILGAN';
+      } else {
+        masteryColor = AppColors.emeraldAccent;
+        masteryIcon = Icons.check_circle_outline_rounded;
+        masteryText = 'O\'ZLASHTIRILGAN';
+      }
+    } else {
+      masteryColor = AppColors.error;
+      masteryIcon = Icons.cancel_outlined;
+      masteryText = 'O\'ZLASHTIRILMAGAN';
     }
 
     return Row(
@@ -1773,7 +1850,7 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'UMUMIY HOLAT (MASTERY)',
+                  'UMUMIY HOLAT',
                   style: TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -1943,9 +2020,9 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                 ),
               const Spacer(),
               Text(
-                'Holat: ${sub.subjectMastery ?? 'FAILED'}',
+                'Holat: ${_translateMastery(sub.subjectMastery, sub.averagePercentage)}',
                 style: TextStyle(
-                  color: sub.subjectMastery == 'PASSED' ? AppColors.emeraldAccent : AppColors.error,
+                  color: _getMasteryColor(sub.subjectMastery, sub.averagePercentage),
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1975,11 +2052,9 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
   Widget _buildExamRow(Exam exam) {
     final examSessionId = exam.examSessionId ?? '';
     final pct = exam.percentage ?? 0.0;
-    final mastery = exam.masteryLevel ?? 'FAILED';
-
-    Color mColor = AppColors.error;
-    if (mastery == 'PASSED') mColor = AppColors.emeraldAccent;
-    if (mastery == 'EXCELLENT') mColor = AppColors.goldPrimary;
+    final rawMastery = exam.masteryLevel;
+    final translatedMastery = _translateMastery(rawMastery, pct);
+    final mColor = _getMasteryColor(rawMastery, pct);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -2014,7 +2089,7 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  mastery,
+                  translatedMastery,
                   style: TextStyle(color: mColor, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),

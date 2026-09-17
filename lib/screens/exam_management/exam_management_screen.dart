@@ -8,6 +8,7 @@ import '../../models/guruh_model.dart';
 import '../../models/test_model.dart';
 import '../../providers/exam_provider.dart';
 import '../../providers/test_provider.dart';
+import '../../providers/edu_plan_provider.dart';
 
 class ExamManagementScreen extends StatefulWidget {
   const ExamManagementScreen({super.key});
@@ -476,6 +477,9 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
       selectedBosqichId = allBosqichs.first.id;
     }
 
+    String? selectedOquvYili = examToEdit?.oquvYili;
+    String? selectedOquvOyi = examToEdit?.oquvOyi;
+
     // Combined Test IDs selection state
     Set<String> selectedCombinedTestIds = {};
     if (examToEdit?.combinedTestIds != null && examToEdit!.combinedTestIds!.isNotEmpty) {
@@ -557,31 +561,36 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                             children: [
                               _buildFormLabel('BOSQICH (KURS)'),
                               const SizedBox(height: 4),
-                              _buildDropdownContainer(
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String?>(
-                                    value: selectedBosqichId,
-                                    dropdownColor: AppColors.cardDark,
-                                    isExpanded: true,
-                                    hint: const Text('Bosqich tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-                                    items: allBosqichs.map((b) {
-                                      return DropdownMenuItem<String?>(
-                                        value: b.id,
-                                        child: Text(b.name ?? 'Bosqich', style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)),
-                                      );
-                                    }).toList(),
-                                    onChanged: (val) {
-                                      setModalState(() {
-                                        selectedBosqichId = val;
-                                        final newFiltered = allGuruhs
-                                            .where((g) => g.id != null && (val == null || g.bosqich?.id == val))
-                                            .toList();
-                                        selectedGuruhId = newFiltered.isNotEmpty ? newFiltered.first.id : null;
-                                      });
-                                    },
+                              Builder(builder: (context) {
+                                if (selectedBosqichId == null && allBosqichs.isNotEmpty) {
+                                  selectedBosqichId = allBosqichs.first.id;
+                                }
+                                return _buildDropdownContainer(
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String?>(
+                                      value: selectedBosqichId,
+                                      dropdownColor: AppColors.cardDark,
+                                      isExpanded: true,
+                                      hint: const Text('Bosqich tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                                      items: allBosqichs.map((b) {
+                                        return DropdownMenuItem<String?>(
+                                          value: b.id,
+                                          child: Text(b.name ?? 'Bosqich', style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)),
+                                        );
+                                      }).toList(),
+                                      onChanged: (val) {
+                                        setModalState(() {
+                                          selectedBosqichId = val;
+                                          final newFiltered = allGuruhs
+                                              .where((g) => g.id != null && (val == null || g.bosqich?.id == val))
+                                              .toList();
+                                          selectedGuruhId = newFiltered.isNotEmpty ? newFiltered.first.id : null;
+                                        });
+                                      },
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              }),
                             ],
                           ),
                         ),
@@ -594,28 +603,109 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                             children: [
                               _buildFormLabel('GURUH'),
                               const SizedBox(height: 4),
-                              _buildDropdownContainer(
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String?>(
-                                    value: selectedGuruhId,
-                                    dropdownColor: AppColors.cardDark,
-                                    isExpanded: true,
-                                    hint: const Text('Guruh tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-                                    items: filteredGuruhlar.map((g) {
-                                      return DropdownMenuItem<String?>(
-                                        value: g.id,
-                                        child: Text(
-                                          '${g.name ?? "Guruh"} ${g.bosqich?.name != null ? "(${g.bosqich?.name})" : ""}',
-                                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 12),
-                                        ),
-                                      );
-                                    }).toList(),
-                                    onChanged: (val) {
-                                      if (val != null) setModalState(() => selectedGuruhId = val);
-                                    },
+                              Builder(builder: (context) {
+                                if (selectedGuruhId == null && filteredGuruhlar.isNotEmpty) {
+                                  selectedGuruhId = filteredGuruhlar.first.id;
+                                }
+                                return _buildDropdownContainer(
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String?>(
+                                      value: selectedGuruhId,
+                                      dropdownColor: AppColors.cardDark,
+                                      isExpanded: true,
+                                      hint: const Text('Guruh tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                                      items: filteredGuruhlar.map((g) {
+                                        return DropdownMenuItem<String?>(
+                                          value: g.id,
+                                          child: Text(
+                                            '${g.name ?? "Guruh"} ${g.bosqich?.name != null ? "(${g.bosqich?.name})" : ""}',
+                                            style: const TextStyle(color: AppColors.textPrimary, fontSize: 12),
+                                          ),
+                                        );
+                                      }).toList(),
+                                      onChanged: (val) {
+                                        if (val != null) setModalState(() => selectedGuruhId = val);
+                                      },
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildFormLabel('O\'QUV YILI'),
+                              const SizedBox(height: 4),
+                              Builder(builder: (context) {
+                                final provider = Provider.of<EduPlanProvider>(context, listen: false);
+                                if (selectedOquvYili == null && provider.oquvYillari.isNotEmpty) {
+                                  selectedOquvYili = provider.oquvYillari.first;
+                                }
+                                return _buildDropdownContainer(
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String?>(
+                                      value: selectedOquvYili,
+                                      dropdownColor: AppColors.cardDark,
+                                      isExpanded: true,
+                                      hint: const Text('O\'quv yilini tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                                      items: provider.oquvYillari.map((y) {
+                                        return DropdownMenuItem<String?>(
+                                          value: y,
+                                          child: Text(y, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)),
+                                        );
+                                      }).toList(),
+                                      onChanged: (val) {
+                                        if (val != null) setModalState(() => selectedOquvYili = val);
+                                      },
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildFormLabel('O\'QUV OYI'),
+                              const SizedBox(height: 4),
+                              Builder(builder: (context) {
+                                final provider = Provider.of<EduPlanProvider>(context, listen: false);
+                                if (selectedOquvOyi == null && provider.oquvOylari.isNotEmpty) {
+                                  selectedOquvOyi = provider.oquvOylari.first;
+                                }
+                                return _buildDropdownContainer(
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String?>(
+                                      value: selectedOquvOyi,
+                                      dropdownColor: AppColors.cardDark,
+                                      isExpanded: true,
+                                      hint: const Text('O\'quv oyini tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                                      items: provider.oquvOylari.map((m) {
+                                        return DropdownMenuItem<String?>(
+                                          value: m,
+                                          child: Text(m, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12)),
+                                        );
+                                      }).toList(),
+                                      onChanged: (val) {
+                                        if (val != null) setModalState(() => selectedOquvOyi = val);
+                                      },
+                                    ),
+                                  ),
+                                );
+                              }),
                             ],
                           ),
                         ),
@@ -776,15 +866,35 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
                     maxAttempts: attempts,
                     status: 'FAOL',
                     combinedTestIds: combinedList.isNotEmpty ? combinedList : null,
+                    oquvYili: selectedOquvYili,
+                    oquvOyi: selectedOquvOyi,
                   );
 
+                  bool success = false;
                   if (examToEdit == null) {
-                    await examProvider.createExam(newExam);
+                    success = await examProvider.createExam(newExam);
                   } else {
-                    await examProvider.updateExam(newExam);
+                    success = await examProvider.updateExam(newExam);
                   }
 
-                  if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(examToEdit == null ? '✔ Imtihon muvaffaqiyatli yaratildi!' : '✔ Imtihon muvaffaqiyatli yangilandi!'),
+                          backgroundColor: AppColors.emeraldAccent,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('❌ Imtihonni saqlashda xatolik yuz berdi!'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  }
                 },
                 child: Text(examToEdit == null ? 'YARATISH' : 'SAQLASH'),
               ),

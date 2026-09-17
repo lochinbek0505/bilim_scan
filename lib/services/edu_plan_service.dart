@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+
 import '../models/edu_plan_model.dart';
 import 'api_config.dart';
 import 'api_service.dart';
@@ -13,7 +14,9 @@ class EduPlanService {
       final response = await _apiService.dio.get(ApiConfig.eduPlans);
       if (response.statusCode == 200 && response.data != null) {
         final List<dynamic> list = response.data as List<dynamic>;
-        return list.map((e) => EduPlanModel.fromJson(e as Map<String, dynamic>)).toList();
+        return list
+            .map((e) => EduPlanModel.fromJson(e as Map<String, dynamic>))
+            .toList();
       }
     } on DioException catch (e) {
       if (kDebugMode) {
@@ -37,8 +40,11 @@ class EduPlanService {
         data: plan.toRequestDtoJson(),
       );
 
-      if ((response.statusCode == 200 || response.statusCode == 201) && response.data != null) {
-        final createdPlan = EduPlanModel.fromJson(response.data as Map<String, dynamic>);
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          response.data != null) {
+        final createdPlan = EduPlanModel.fromJson(
+          response.data as Map<String, dynamic>,
+        );
         final planId = createdPlan.id;
 
         // Step 2: Bulk upload topics if topics list is not empty
@@ -62,7 +68,10 @@ class EduPlanService {
 
   /// POST /api/edu-plans/{planId}/topics/bulk
   /// Body: [ { "t/r": 1, "name": "Kirish", "soat": 2, "type": "Nazariy" }, ... ]
-  Future<bool> uploadTopicsBulk(String planId, List<EduPlanTopicModel> topics) async {
+  Future<bool> uploadTopicsBulk(
+    String planId,
+    List<EduPlanTopicModel> topics,
+  ) async {
     try {
       final topicsPayload = topics.map((t) => t.toBulkRequestJson()).toList();
 
@@ -86,12 +95,17 @@ class EduPlanService {
 
   /// PUT /api/edu-plans/{id} (Token bilan)
   Future<bool> updateEduPlan(EduPlanModel plan) async {
+    print('${ApiConfig.eduPlans}/${plan.id}');
     try {
       final response = await _apiService.dio.put(
         '${ApiConfig.eduPlans}/${plan.id}',
         data: plan.toRequestDtoJson(),
       );
-      final isSuccess = response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204;
+      print('Update response: $response');
+      final isSuccess =
+          response.statusCode == 200 ||
+          response.statusCode == 201 ||
+          response.statusCode == 204;
       if (isSuccess && plan.topics.isNotEmpty) {
         await uploadTopicsBulk(plan.id, plan.topics);
       }
@@ -112,8 +126,12 @@ class EduPlanService {
   /// DELETE /api/edu-plans/{id} (Token bilan)
   Future<bool> deleteEduPlan(String id) async {
     try {
-      final response = await _apiService.dio.delete('${ApiConfig.eduPlans}/$id');
-      return response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204;
+      final response = await _apiService.dio.delete(
+        '${ApiConfig.eduPlans}/$id',
+      );
+      return response.statusCode == 200 ||
+          response.statusCode == 201 ||
+          response.statusCode == 204;
     } on DioException catch (e) {
       if (kDebugMode) {
         debugPrint('❌ [EDU PLAN SERVICE DELETE ERR]: ${e.message}');

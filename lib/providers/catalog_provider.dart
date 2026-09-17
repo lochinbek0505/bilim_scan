@@ -86,153 +86,158 @@ class CatalogProvider extends ChangeNotifier {
   // --- CRUD ACTIONS FOR BOSQICHLAR ---
   Future<bool> createBosqich(String name) async {
     final result = await _service.createBosqich(CatalogRequestModel(name: name));
-    final newObj = result ?? CatalogResponse(id: 'bosqich_${DateTime.now().millisecondsSinceEpoch}', name: name);
-    _bosqichlar.add(newObj);
-    notifyListeners();
-    return true;
+    if (result != null) {
+      _bosqichlar.add(result);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   Future<bool> updateBosqich(String id, String newName) async {
-    await _service.updateBosqich(CatalogRequestModel(name: newName), id);
-    final idx = _bosqichlar.indexWhere((e) => e.id == id);
-    if (idx != -1) {
-      _bosqichlar[idx] = CatalogResponse(id: id, name: newName);
-      notifyListeners();
+    final result = await _service.updateBosqich(CatalogRequestModel(name: newName), id);
+    if (result != null) {
+      final idx = _bosqichlar.indexWhere((e) => e.id == id);
+      if (idx != -1) {
+        _bosqichlar[idx] = CatalogResponse(id: id, name: newName);
+        notifyListeners();
+      }
+      return true;
     }
-    return true;
+    return false;
   }
 
   Future<bool> deleteBosqich(String id) async {
-    await _service.deleteBosqich(id);
-    _bosqichlar.removeWhere((e) => e.id == id);
-    notifyListeners();
-    return true;
+    final result = await _service.deleteBosqich(id);
+    if (result) {
+      _bosqichlar.removeWhere((e) => e.id == id);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   // --- CRUD ACTIONS FOR KAFEDRALAR ---
   Future<bool> createKafedra(String name) async {
     final result = await _service.createKafedra(CatalogRequestModel(name: name));
-    final newObj = result ?? CatalogResponse(id: 'kafedra_${DateTime.now().millisecondsSinceEpoch}', name: name);
-    _kafedralar.add(newObj);
-    notifyListeners();
-    return true;
+    if (result != null) {
+      _kafedralar.add(result);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   Future<bool> updateKafedra(String id, String newName) async {
-    await _service.updateKafedra(CatalogRequestModel(name: newName), id);
-    final idx = _kafedralar.indexWhere((e) => e.id == id);
-    if (idx != -1) {
-      _kafedralar[idx] = CatalogResponse(id: id, name: newName);
-      notifyListeners();
+    final result = await _service.updateKafedra(CatalogRequestModel(name: newName), id);
+    if (result != null) {
+      final idx = _kafedralar.indexWhere((e) => e.id == id);
+      if (idx != -1) {
+        _kafedralar[idx] = CatalogResponse(id: id, name: newName);
+        notifyListeners();
+      }
+      return true;
     }
-    return true;
+    return false;
   }
 
   Future<bool> deleteKafedra(String id) async {
-    await _service.deleteKafedra(id);
-    _kafedralar.removeWhere((e) => e.id == id);
-    notifyListeners();
-    return true;
+    final result = await _service.deleteKafedra(id);
+    if (result) {
+      _kafedralar.removeWhere((e) => e.id == id);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   // --- CRUD ACTIONS FOR GURUHLAR (Request: {"name": "...", "bosqichId": "..."}) ---
   Future<bool> createGuruh(String name, String bosqichId) async {
     final req = GuruhRequestModel(name: name, bosqichId: bosqichId);
     final result = await _service.createGuruh(req);
-
-    // Find bosqich name for local UI fallback
-    final b = _bosqichlar.firstWhere(
-      (element) => element.id == bosqichId,
-      orElse: () => CatalogResponse(id: bosqichId, name: 'Bosqich'),
-    );
-
-    final newObj = result ??
-        GuruhModel(
-          id: 'guruh_${DateTime.now().millisecondsSinceEpoch}',
-          name: name,
-          bosqich: Bosqich(id: b.id, name: b.name),
-        );
-
-    _guruhlar.add(newObj);
-    notifyListeners();
-    return true;
+    if (result != null) {
+      _guruhlar.add(result);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   Future<bool> updateGuruh(String id, String name, String bosqichId) async {
     final req = GuruhRequestModel(name: name, bosqichId: bosqichId);
-    await _service.updateGuruh(req, id);
-
-    final b = _bosqichlar.firstWhere(
-      (element) => element.id == bosqichId,
-      orElse: () => CatalogResponse(id: bosqichId, name: 'Bosqich'),
-    );
-
-    final idx = _guruhlar.indexWhere((e) => e.id == id);
-    if (idx != -1) {
-      _guruhlar[idx] = GuruhModel(
-        id: id,
-        name: name,
-        bosqich: Bosqich(id: b.id, name: b.name),
+    final result = await _service.updateGuruh(req, id);
+    if (result != null) {
+      final b = _bosqichlar.firstWhere(
+        (element) => element.id == bosqichId,
+        orElse: () => CatalogResponse(id: bosqichId, name: 'Bosqich'),
       );
-      notifyListeners();
+
+      final idx = _guruhlar.indexWhere((e) => e.id == id);
+      if (idx != -1) {
+        _guruhlar[idx] = GuruhModel(
+          id: id,
+          name: name,
+          bosqich: Bosqich(id: b.id, name: b.name),
+        );
+        notifyListeners();
+      }
+      return true;
     }
-    return true;
+    return false;
   }
 
   Future<bool> deleteGuruh(String id) async {
-    await _service.deleteGuruh(id);
-    _guruhlar.removeWhere((e) => e.id == id);
-    notifyListeners();
-    return true;
+    final result = await _service.deleteGuruh(id);
+    if (result) {
+      _guruhlar.removeWhere((e) => e.id == id);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   // --- CRUD ACTIONS FOR FANLAR (Request: {"name": "...", "kafedraId": "..."}) ---
   Future<bool> createFan(String name, String kafedraId) async {
     final req = FanRequestModel(name: name, kafedraId: kafedraId);
     final result = await _service.createFan(req);
-
-    final k = _kafedralar.firstWhere(
-      (element) => element.id == kafedraId,
-      orElse: () => CatalogResponse(id: kafedraId, name: 'Kafedra'),
-    );
-
-    final newObj = result ??
-        FanModel(
-          id: 'fan_${DateTime.now().millisecondsSinceEpoch}',
-          name: name,
-          kafedra: Kafedra(id: k.id, name: k.name),
-        );
-
-    _fanlar.add(newObj);
-    notifyListeners();
-    return true;
+    if (result != null) {
+      _fanlar.add(result);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   Future<bool> updateFan(String id, String name, String kafedraId) async {
     final req = FanRequestModel(name: name, kafedraId: kafedraId);
-    await _service.updateFan(req, id);
-
-    final k = _kafedralar.firstWhere(
-      (element) => element.id == kafedraId,
-      orElse: () => CatalogResponse(id: kafedraId, name: 'Kafedra'),
-    );
-
-    final idx = _fanlar.indexWhere((e) => e.id == id);
-    if (idx != -1) {
-      _fanlar[idx] = FanModel(
-        id: id,
-        name: name,
-        kafedra: Kafedra(id: k.id, name: k.name),
+    final result = await _service.updateFan(req, id);
+    if (result != null) {
+      final k = _kafedralar.firstWhere(
+        (element) => element.id == kafedraId,
+        orElse: () => CatalogResponse(id: kafedraId, name: 'Kafedra'),
       );
-      notifyListeners();
+
+      final idx = _fanlar.indexWhere((e) => e.id == id);
+      if (idx != -1) {
+        _fanlar[idx] = FanModel(
+          id: id,
+          name: name,
+          kafedra: Kafedra(id: k.id, name: k.name),
+        );
+        notifyListeners();
+      }
+      return true;
     }
-    return true;
+    return false;
   }
 
   Future<bool> deleteFan(String id) async {
-    await _service.deleteFan(id);
-    _fanlar.removeWhere((e) => e.id == id);
-    notifyListeners();
-    return true;
+    final result = await _service.deleteFan(id);
+    if (result) {
+      _fanlar.removeWhere((e) => e.id == id);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 }

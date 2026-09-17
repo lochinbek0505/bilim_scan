@@ -58,6 +58,7 @@ class EduPlanModel {
   final String fanId;
   final String kafedraId;
   final String oquvYili;
+  final String? oquvOyi;
   final List<EduPlanTopicModel> topics;
 
   EduPlanModel({
@@ -66,6 +67,7 @@ class EduPlanModel {
     required this.fanId,
     required this.kafedraId,
     required this.oquvYili,
+    this.oquvOyi,
     required this.topics,
   });
 
@@ -84,12 +86,27 @@ class EduPlanModel {
       }
     }
 
+    String parsedFanId = '';
+    if (json['fan'] is Map) {
+      parsedFanId = (json['fan']['id'] ?? '').toString();
+    } else {
+      parsedFanId = (json['fanId'] ?? '').toString();
+    }
+
+    String parsedKafedraId = '';
+    if (json['kafedra'] is Map) {
+      parsedKafedraId = (json['kafedra']['id'] ?? '').toString();
+    } else {
+      parsedKafedraId = (json['kafedraId'] ?? '').toString();
+    }
+
     return EduPlanModel(
       id: (json['id'] ?? json['_id'] ?? DateTime.now().millisecondsSinceEpoch.toString()).toString(),
       name: (json['name'] ?? '').toString(),
-      fanId: (json['fanId'] ?? '').toString(),
-      kafedraId: (json['kafedraId'] ?? '').toString(),
+      fanId: parsedFanId,
+      kafedraId: parsedKafedraId,
       oquvYili: (json['oquvYili'] ?? '2025-2026').toString(),
+      oquvOyi: json['oquvOyi']?.toString(),
       topics: parsedTopics,
     );
   }
@@ -101,6 +118,7 @@ class EduPlanModel {
       'fanId': fanId,
       'kafedraId': kafedraId,
       'oquvYili': oquvYili,
+      if (oquvOyi != null) 'oquvOyi': oquvOyi,
     };
   }
 
@@ -111,6 +129,7 @@ class EduPlanModel {
       'fanId': fanId,
       'kafedraId': kafedraId,
       'oquvYili': oquvYili,
+      'oquvOyi': oquvOyi,
       'topics': topics.map((e) => e.toBulkRequestJson()).toList(),
     };
   }
@@ -121,6 +140,7 @@ class EduPlanModel {
     String? fanId,
     String? kafedraId,
     String? oquvYili,
+    String? oquvOyi,
     List<EduPlanTopicModel>? topics,
   }) {
     return EduPlanModel(
@@ -129,6 +149,7 @@ class EduPlanModel {
       fanId: fanId ?? this.fanId,
       kafedraId: kafedraId ?? this.kafedraId,
       oquvYili: oquvYili ?? this.oquvYili,
+      oquvOyi: oquvOyi ?? this.oquvOyi,
       topics: topics ?? this.topics,
     );
   }

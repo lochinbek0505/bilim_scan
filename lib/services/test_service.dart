@@ -82,7 +82,7 @@ class TestService {
   /// POST /api/tests/{testId}/questions/bulk
   Future<bool> uploadQuestionsBulk(String testId, List<QuestionModel> questions) async {
     final payload = questions.map((q) => q.toJson()).toList();
-
+    print(payload);
     try {
       final response = await _apiService.dio.post(
         '${ApiConfig.tests}/$testId/questions/bulk',

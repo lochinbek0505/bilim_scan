@@ -61,7 +61,7 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'KATALOGLAR BOSHQARUVI (CRUD)',
+                'KATALOGLAR BOSHQARUVI',
                 style: AppTextStyles.titleHeader.copyWith(
                   fontSize: 16,
                   color: AppColors.textPrimary,
@@ -567,44 +567,50 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.inputBackground,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedBosqichId,
-                          dropdownColor: AppColors.cardDark,
-                          isExpanded: true,
-                          hint: const Text(
-                            'Bosqichni tanlang',
-                            style: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 13,
-                            ),
-                          ),
-                          items: provider.bosqichlar.map((b) {
-                            return DropdownMenuItem<String>(
-                              value: b.id,
-                              child: Text(
-                                b.name ?? 'Bosqich',
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null)
-                              setModalState(() => selectedBosqichId = val);
-                          },
+                    Builder(builder: (context) {
+                      if (selectedBosqichId == null && provider.bosqichlar.isNotEmpty) {
+                        selectedBosqichId = provider.bosqichlar.first.id;
+                      }
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.inputBackground,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.cardBorder),
                         ),
-                      ),
-                    ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedBosqichId,
+                            dropdownColor: AppColors.cardDark,
+                            isExpanded: true,
+                            hint: const Text(
+                              'Bosqichni tanlang',
+                              style: TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 13,
+                              ),
+                            ),
+                            items: provider.bosqichlar.map((b) {
+                              return DropdownMenuItem<String>(
+                                value: b.id,
+                                child: Text(
+                                  b.name ?? 'Bosqich',
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setModalState(() => selectedBosqichId = val);
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                    }),
                   ],
 
                   // DROPDOWN FOR FAN -> KAFEDRA TANLASH
@@ -618,44 +624,50 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.inputBackground,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedKafedraId,
-                          dropdownColor: AppColors.cardDark,
-                          isExpanded: true,
-                          hint: const Text(
-                            'Kafedrani tanlang',
-                            style: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 13,
-                            ),
-                          ),
-                          items: provider.kafedralar.map((k) {
-                            return DropdownMenuItem<String>(
-                              value: k.id,
-                              child: Text(
-                                k.name ?? 'Kafedra',
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null)
-                              setModalState(() => selectedKafedraId = val);
-                          },
+                    Builder(builder: (context) {
+                      if (selectedKafedraId == null && provider.kafedralar.isNotEmpty) {
+                        selectedKafedraId = provider.kafedralar.first.id;
+                      }
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.inputBackground,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.cardBorder),
                         ),
-                      ),
-                    ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedKafedraId,
+                            dropdownColor: AppColors.cardDark,
+                            isExpanded: true,
+                            hint: const Text(
+                              'Kafedrani tanlang',
+                              style: TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 13,
+                              ),
+                            ),
+                            items: provider.kafedralar.map((k) {
+                              return DropdownMenuItem<String>(
+                                value: k.id,
+                                child: Text(
+                                  k.name ?? 'Kafedra',
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setModalState(() => selectedKafedraId = val);
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                    }),
                   ],
                 ],
               ),

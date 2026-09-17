@@ -279,7 +279,7 @@ class _StudentLoginScreenState extends State<StudentLoginScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'LOKAL SERVER: ONLINE (${ApiConfig.discoveredHost})',
+                      'LOKAL SERVER: FAOL (${ApiConfig.discoveredHost})',
                       style: AppTextStyles.badgeText.copyWith(
                         fontSize: 11,
                         color: AppColors.emeraldAccent,
@@ -393,7 +393,7 @@ class _StudentLoginScreenState extends State<StudentLoginScreen>
               const SizedBox(height: 22),
 
               // LOGIN FIELD
-              _buildInputFieldLabel('O\'QUVCHI LOGINI (USERNAME)'),
+              _buildInputFieldLabel('O\'QUVCHI LOGINI'),
               const SizedBox(height: 6),
               TextField(
                 controller: authProvider.loginController,

@@ -4,6 +4,7 @@ class ExamModel {
   final String id;
   final String? name;
   final String testId;
+  final String? testName;
   final String guruhId;
   final GuruhModel? guruh;
   final int durationMinutes;
@@ -14,11 +15,14 @@ class ExamModel {
   final String? endTime;
   final String status; // REJALASHTIRILGAN, FAOL, YAKUNLANGAN
   final List<String>? combinedTestIds;
+  final String? oquvYili;
+  final String? oquvOyi;
 
   ExamModel({
     required this.id,
     this.name,
     required this.testId,
+    this.testName,
     required this.guruhId,
     this.guruh,
     required this.durationMinutes,
@@ -29,17 +33,24 @@ class ExamModel {
     this.endTime,
     this.status = 'FAOL',
     this.combinedTestIds,
+    this.oquvYili,
+    this.oquvOyi,
   });
 
   factory ExamModel.fromJson(Map<String, dynamic> json) {
-    // Parse testId (String or object)
+    // Parse testId and testName (String or object)
     String tId = '';
+    String? tName;
     if (json['test'] is String) {
       tId = json['test'] as String;
     } else if (json['test'] is Map) {
-      tId = json['test']['id'] as String? ?? '';
+      tId = (json['test']['id'] ?? json['test']['_id'] ?? '').toString();
+      tName = json['test']['name'] as String? ?? json['test']['title'] as String?;
     } else if (json['testId'] != null) {
       tId = json['testId'] as String;
+    }
+    if (tName == null && json['testName'] != null) {
+      tName = json['testName'] as String?;
     }
 
     // Parse guruhId and guruh object
@@ -68,6 +79,7 @@ class ExamModel {
       id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: json['name'] as String? ?? (gObj != null ? 'Imtihon (${gObj.name})' : 'Imtihon'),
       testId: tId,
+      testName: tName,
       guruhId: gId,
       guruh: gObj,
       durationMinutes: json['durationMinutes'] as int? ?? (json['ajratilganVaqt'] as int? ?? 20),
@@ -78,6 +90,8 @@ class ExamModel {
       endTime: json['endTime'] as String?,
       status: json['status'] as String? ?? parsedStatus,
       combinedTestIds: parsedCombined,
+      oquvYili: json['oquvYili'] as String?,
+      oquvOyi: json['oquvOyi'] as String?,
     );
   }
 
@@ -97,6 +111,8 @@ class ExamModel {
       'status': status,
       if (combinedTestIds != null && combinedTestIds!.isNotEmpty)
         'combinedTestIds': combinedTestIds,
+      if (oquvYili != null) 'oquvYili': oquvYili,
+      if (oquvOyi != null) 'oquvOyi': oquvOyi,
     };
   }
 
@@ -111,6 +127,8 @@ class ExamModel {
       'maxAttempts': maxAttempts,
       if (combinedTestIds != null && combinedTestIds!.isNotEmpty)
         'combinedTestIds': combinedTestIds,
+      if (oquvYili != null) 'oquvYili': oquvYili,
+      if (oquvOyi != null) 'oquvOyi': oquvOyi,
     };
   }
 
@@ -132,6 +150,8 @@ class ExamModel {
     String? endTime,
     String? status,
     List<String>? combinedTestIds,
+    String? oquvYili,
+    String? oquvOyi,
   }) {
     return ExamModel(
       id: id ?? this.id,
@@ -147,6 +167,8 @@ class ExamModel {
       endTime: endTime ?? this.endTime,
       status: status ?? this.status,
       combinedTestIds: combinedTestIds ?? this.combinedTestIds,
+      oquvYili: oquvYili ?? this.oquvYili,
+      oquvOyi: oquvOyi ?? this.oquvOyi,
     );
   }
 }

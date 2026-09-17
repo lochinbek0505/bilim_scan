@@ -27,8 +27,10 @@ void navigateToLogin() {
   );
 }
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // runApp ishga tushishidan oldin logindan chiqarib yuboramiz. (har doim so'rashi uchun)
+  // AuthProvider ichida `StorageService` bor, u yerda `_loadStoredUser` o'chirib qo'yilgan bo'lishi kerak
   runApp(const BilimScanApp());
 }
 
@@ -52,8 +54,20 @@ class BilimScanApp extends StatelessWidget {
         navigatorObservers: [routeObserver],
         title: 'IIV Akademik Litseyi - Bilim Scan',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
+        themeMode: ThemeMode.dark, // Har doim dark mode bo'lishini ta'minlash
+        darkTheme: ThemeData(
           useMaterial3: true,
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor: AppColors.backgroundDark,
+          colorScheme: const ColorScheme.dark(
+            primary: AppColors.goldPrimary,
+            secondary: AppColors.emeraldAccent,
+            surface: AppColors.cardDark,
+          ),
+        ),
+        theme: ThemeData( // Windows kabi OT larda "System theme" oq bo'lsa ham qorani ishlatishi uchun
+          useMaterial3: true,
+          brightness: Brightness.dark,
           scaffoldBackgroundColor: AppColors.backgroundDark,
           colorScheme: const ColorScheme.dark(
             primary: AppColors.goldPrimary,

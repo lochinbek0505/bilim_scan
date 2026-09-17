@@ -72,19 +72,20 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       navigateToLogin();
     };
-    _loadStoredUser();
+    // Initialize storage but don't auto-login so user must enter password every time app opens
+    _initStorageOnly();
   }
 
-  Future<void> _loadStoredUser() async {
+  Future<void> _initStorageOnly() async {
     await _storageService.initStorage();
+    // Only pre-fill the username if available, but require password to login
     final savedData = await _storageService.getLoginData();
-    if (savedData != null) {
-      _currentUserModel = savedData;
-      if (savedData.user?.username != null) {
-        loginController.text = savedData.user!.username!;
-      }
+    if (savedData != null && savedData.user?.username != null) {
+      loginController.text = savedData.user!.username!;
       notifyListeners();
     }
+    // Dastur yangi ochilganda tokenlarni tozalaymiz
+    await _storageService.clearStorage();
   }
 
   void setRole(UserRole role) {

@@ -185,11 +185,25 @@ class TestModel {
       vaqt = int.tryParse(rawVaqt.toString()) ?? 60;
     }
 
+    String parsedFanId = '';
+    if (json['fan'] is Map) {
+      parsedFanId = (json['fan']['id'] ?? '').toString();
+    } else {
+      parsedFanId = (json['fanId'] ?? '').toString();
+    }
+
+    String parsedKafedraId = '';
+    if (json['kafedra'] is Map) {
+      parsedKafedraId = (json['kafedra']['id'] ?? '').toString();
+    } else {
+      parsedKafedraId = (json['kafedraId'] ?? '').toString();
+    }
+
     return TestModel(
       id: (json['id'] ?? json['_id'] ?? DateTime.now().millisecondsSinceEpoch.toString()).toString(),
       name: (json['name'] ?? '').toString(),
-      fanId: (json['fanId'] ?? '').toString(),
-      kafedraId: (json['kafedraId'] ?? '').toString(),
+      fanId: parsedFanId,
+      kafedraId: parsedKafedraId,
       eduPlanId: (json['eduPlanId'] ?? '').toString(),
       guruhId: (json['guruhId'] ?? '10-25-guruh').toString(),
       oquvYili: (json['oquvYili'] ?? '2026-2027').toString(),

@@ -624,20 +624,25 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                             children: [
                               _buildFormLabel('O\'QUV YILI'),
                               const SizedBox(height: 4),
-                              _buildDropdownContainer(
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String?>(
-                                    value: oquvYiliValue,
-                                    dropdownColor: AppColors.cardDark,
-                                    isExpanded: true,
-                                    hint: const Text('O\'quv yilini tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
-                                    items: oquvYiliItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
-                                    onChanged: (val) {
-                                      if (val != null) setModalState(() => selectedOquvYili = val);
-                                    },
+                              Builder(builder: (context) {
+                                if (selectedOquvYili == null && testProvider.oquvYillari.isNotEmpty) {
+                                  selectedOquvYili = testProvider.oquvYillari.first;
+                                }
+                                return _buildDropdownContainer(
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String?>(
+                                      value: selectedOquvYili,
+                                      dropdownColor: AppColors.cardDark,
+                                      isExpanded: true,
+                                      hint: const Text('O\'quv yilini tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                                      items: oquvYiliItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
+                                      onChanged: (val) {
+                                        if (val != null) setModalState(() => selectedOquvYili = val);
+                                      },
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              }),
                             ],
                           ),
                         ),

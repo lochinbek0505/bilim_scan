@@ -866,9 +866,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           dropdownColor: AppColors.cardDark,
                           isExpanded: true,
                           items: const [
-                            DropdownMenuItem(value: 'USER', child: Text('O\'quvchi / Kursant (USER)', style: TextStyle(color: AppColors.textPrimary, fontSize: 13))),
-                            DropdownMenuItem(value: 'TEACHER', child: Text('O\'qituvchi / Nazoratchi (TEACHER)', style: TextStyle(color: AppColors.textPrimary, fontSize: 13))),
-                            DropdownMenuItem(value: 'ADMIN', child: Text('Administrator (ADMIN)', style: TextStyle(color: AppColors.textPrimary, fontSize: 13))),
+                            DropdownMenuItem(value: 'USER', child: Text('O\'quvchi / Kursant', style: TextStyle(color: AppColors.textPrimary, fontSize: 13))),
+                            DropdownMenuItem(value: 'TEACHER', child: Text('O\'qituvchi / Nazoratchi', style: TextStyle(color: AppColors.textPrimary, fontSize: 13))),
+                            DropdownMenuItem(value: 'ADMIN', child: Text('Administrator', style: TextStyle(color: AppColors.textPrimary, fontSize: 13))),
                           ],
                           onChanged: (val) {
                             if (val != null) setModalState(() => selectedRole = val);
@@ -901,7 +901,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFormLabel('ISMI (FIRST NAME)'),
+                              _buildFormLabel('ISMI'),
                               const SizedBox(height: 4),
                               TextField(
                                 controller: firstNameController,
@@ -916,7 +916,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
                     const SizedBox(height: 14),
 
-                    _buildFormLabel('OTASINING ISMI (PATRONYMIC)'),
+                    _buildFormLabel('OTASINING ISMI'),
                     const SizedBox(height: 4),
                     TextField(
                       controller: patronymicController,

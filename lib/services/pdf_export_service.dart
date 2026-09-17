@@ -101,7 +101,7 @@ class PdfExportService {
                         ),
                         pw.SizedBox(height: 3),
                         pw.Text(
-                          'Umumiy holat: ${_translateMastery(data.monitoringData.overallMastery)}',
+                          'Umumiy holat: ${_translateMastery(data.monitoringData.overallPercentage, data.monitoringData.overallMastery)}',
                           style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
                         ),
                       ],
@@ -145,12 +145,12 @@ class PdfExportService {
                     headers: ['Fan nomi', 'O\'rtacha foiz', 'O\'zlashtirish', 'Imtihonlar'],
                     data: month.subjects.map((subject) {
                       final examsList = subject.exams
-                          .map((e) => '${e.examName ?? "Imtihon"}: ${e.percentage?.toStringAsFixed(1) ?? "0.0"}% (${_translateMastery(e.masteryLevel)})')
+                          .map((e) => '${e.examName ?? "Imtihon"}: ${e.percentage?.toStringAsFixed(1) ?? "0.0"}% (${_translateMastery(e.percentage, e.masteryLevel)})')
                           .join('\n');
                       return [
                         subject.subjectName ?? "Noma'lum fan",
                         '${subject.averagePercentage?.toStringAsFixed(1) ?? '0.0'}%',
-                        _translateMastery(subject.subjectMastery),
+                        _translateMastery(subject.averagePercentage, subject.subjectMastery),
                         examsList.isEmpty ? '-' : examsList,
                       ];
                     }).toList(),
@@ -265,7 +265,7 @@ class PdfExportService {
                               ),
                               pw.SizedBox(height: 3),
                               pw.Text(
-                                'Umumiy holat: ${_translateMastery(data.monitoringData.overallMastery)}',
+                                'Umumiy holat: ${_translateMastery(data.monitoringData.overallPercentage, data.monitoringData.overallMastery)}',
                                 style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
                               ),
                             ],
@@ -308,12 +308,12 @@ class PdfExportService {
                           headers: ['Fan nomi', 'O\'rtacha foiz', 'O\'zlashtirish', 'Imtihonlar'],
                           data: month.subjects.map((subject) {
                             final examsList = subject.exams
-                                .map((e) => '${e.examName ?? "Imtihon"}: ${e.percentage?.toStringAsFixed(1) ?? "0.0"}% (${_translateMastery(e.masteryLevel)})')
+                                .map((e) => '${e.examName ?? "Imtihon"}: ${e.percentage?.toStringAsFixed(1) ?? "0.0"}% (${_translateMastery(e.percentage, e.masteryLevel)})')
                                 .join('\n');
                             return [
                               subject.subjectName ?? "Noma'lum fan",
                               '${subject.averagePercentage?.toStringAsFixed(1) ?? '0.0'}%',
-                              _translateMastery(subject.subjectMastery),
+                              _translateMastery(subject.averagePercentage, subject.subjectMastery),
                               examsList.isEmpty ? '-' : examsList,
                             ];
                           }).toList(),
@@ -334,18 +334,13 @@ class PdfExportService {
 
       final name = fileName.endsWith('.pdf') ? fileName : '$fileName.pdf';
 
-      try {
-        await Printing.layoutPdf(
-          onLayout: (PdfPageFormat format) async => pdfBytes,
-          name: name,
-        );
-      } catch (e) {
-        debugPrint("Printing kanali topilmadi, FilePicker ishlatilmoqda: $e");
-        await FilePicker.saveFile(
-          fileName: name,
-          bytes: pdfBytes,
-        );
-      }
+      await FilePicker.saveFile(
+        dialogTitle: 'PDF faylini saqlash',
+        fileName: name,
+        bytes: pdfBytes,
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
     } catch (e) {
       debugPrint("PDF eksportida xatolik: $e");
     }
@@ -468,16 +463,46 @@ class PdfExportService {
     }
   }
 
-  static String _translateMastery(String? mastery) {
-    if (mastery == null || mastery.trim().isEmpty) return "Noma'lum";
-    final upper = mastery.toUpperCase().trim();
-    if (upper == 'HIGH_MASTERY' || upper == 'EXCELLENT' || upper == 'PASSED_HIGH') {
-      return "O'zlashtirdi";
-    } else if (upper == 'PASSED' || upper == 'SATISFACTORY' || upper == 'GOOD') {
-      return "Qoniqarli";
-    } else if (upper == 'FAILED' || upper == 'FAIL' || upper == 'UNSATISFACTORY') {
-      return "O'zlashtirmadi";
+  static String _translateMastery(dynamic percentageOrMastery, [String? fallbackMastery]) {
+    num? percentage;
+    String? masteryStr;
+
+    if (percentageOrMastery is num) {
+      percentage = percentageOrMastery;
+      masteryStr = fallbackMastery;
+    } else if (percentageOrMastery is String) {
+      final parsed = double.tryParse(percentageOrMastery);
+      if (parsed != null) {
+        percentage = parsed;
+        masteryStr = fallbackMastery;
+      } else {
+        masteryStr = percentageOrMastery;
+      }
+    } else {
+      masteryStr = fallbackMastery;
     }
+
+    if (percentage != null) {
+      if (percentage >= 85.0) {
+        return "A'lo";
+      } else if (percentage >= 60.0) {
+        return "O'zlashtirdi";
+      } else {
+        return "O'zlashtirmadi";
+      }
+    }
+
+    if (masteryStr != null && masteryStr.trim().isNotEmpty) {
+      final upper = masteryStr.toUpperCase().trim();
+      if (upper == 'HIGH_MASTERY' || upper == 'EXCELLENT' || upper == 'PASSED_HIGH' || upper == 'A\'LO') {
+        return "A'lo";
+      } else if (upper == 'PASSED' || upper == 'SATISFACTORY' || upper == 'GOOD' || upper == 'O\'ZLASHTIRDI') {
+        return "O'zlashtirdi";
+      } else if (upper == 'FAILED' || upper == 'FAIL' || upper == 'UNSATISFACTORY') {
+        return "O'zlashtirmadi";
+      }
+    }
+
     return "Noma'lum";
   }
 }

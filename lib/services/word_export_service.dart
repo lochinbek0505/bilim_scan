@@ -64,7 +64,7 @@ class WordExportService {
                   <p><strong>Bosqich:</strong> $bosqichName</p>
                   <p><strong>Guruh:</strong> $guruhName</p>
                   <p><strong>Umumiy o'zlashtirish foizi:</strong> ${data.monitoringData.overallPercentage?.toStringAsFixed(1) ?? '0.0'}%</p>
-                  <p><strong>Umumiy holat:</strong> ${_translateMastery(data.monitoringData.overallMastery)}</p>
+                  <p><strong>Umumiy holat:</strong> ${_translateMastery(data.monitoringData.overallPercentage, data.monitoringData.overallMastery)}</p>
                 </td>
               </tr>
             </table>
@@ -90,7 +90,7 @@ class WordExportService {
             for (var subject in month.subjects) {
               String examsHtml = "<ul>";
               for (var exam in subject.exams) {
-                examsHtml += "<li>${exam.examName ?? 'Imtihon'} (${exam.percentage?.toStringAsFixed(1) ?? '0.0'}% - ${_translateMastery(exam.masteryLevel)})</li>";
+                examsHtml += "<li>${exam.examName ?? 'Imtihon'} (${exam.percentage?.toStringAsFixed(1) ?? '0.0'}% - ${_translateMastery(exam.percentage, exam.masteryLevel)})</li>";
               }
               examsHtml += "</ul>";
               
@@ -98,7 +98,7 @@ class WordExportService {
                 <tr>
                   <td>${subject.subjectName ?? "Noma'lum fan"}</td>
                   <td>${subject.averagePercentage?.toStringAsFixed(1) ?? '0.0'}%</td>
-                  <td>${_translateMastery(subject.subjectMastery)}</td>
+                  <td>${_translateMastery(subject.averagePercentage, subject.subjectMastery)}</td>
                   <td>$examsHtml</td>
                 </tr>
               ''');
@@ -126,12 +126,46 @@ class WordExportService {
     }
   }
 
-  static String _translateMastery(String? mastery) {
-    switch (mastery) {
-      case 'HIGH_MASTERY': return "A'lo";
-      case 'PASSED': return "Qoniqarli";
-      case 'FAILED': return "O'zlashtirmadi";
-      default: return mastery ?? "Noma'lum";
+  static String _translateMastery(dynamic percentageOrMastery, [String? fallbackMastery]) {
+    num? percentage;
+    String? masteryStr;
+
+    if (percentageOrMastery is num) {
+      percentage = percentageOrMastery;
+      masteryStr = fallbackMastery;
+    } else if (percentageOrMastery is String) {
+      final parsed = double.tryParse(percentageOrMastery);
+      if (parsed != null) {
+        percentage = parsed;
+        masteryStr = fallbackMastery;
+      } else {
+        masteryStr = percentageOrMastery;
+      }
+    } else {
+      masteryStr = fallbackMastery;
     }
+
+    if (percentage != null) {
+      if (percentage >= 85.0) {
+        return "A'lo";
+      } else if (percentage >= 60.0) {
+        return "O'zlashtirdi";
+      } else {
+        return "O'zlashtirmadi";
+      }
+    }
+
+    if (masteryStr != null && masteryStr.trim().isNotEmpty) {
+      final upper = masteryStr.toUpperCase().trim();
+      if (upper == 'HIGH_MASTERY' || upper == 'EXCELLENT' || upper == 'PASSED_HIGH' || upper == 'A\'LO') {
+        return "A'lo";
+      } else if (upper == 'PASSED' || upper == 'SATISFACTORY' || upper == 'GOOD' || upper == 'O\'ZLASHTIRDI') {
+        return "O'zlashtirdi";
+      } else if (upper == 'FAILED' || upper == 'FAIL' || upper == 'UNSATISFACTORY') {
+        return "O'zlashtirmadi";
+      }
+    }
+
+    return "Noma'lum";
   }
 }

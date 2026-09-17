@@ -272,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'LOKAL SERVER: ONLINE (${ApiConfig.discoveredHost})',
+                      'LOKAL SERVER: FAOL (${ApiConfig.discoveredHost})',
                       style: AppTextStyles.badgeText.copyWith(
                         fontSize: 11,
                         color: AppColors.emeraldAccent,
