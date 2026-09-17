@@ -53,6 +53,11 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
             ],
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: AppColors.goldPrimary),
+              tooltip: 'Ma\'lumotlarni yangilash',
+              onPressed: () => examProvider.fetchInitialData(),
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: ElevatedButton.icon(
@@ -83,16 +88,28 @@ class _ExamManagementScreenState extends State<ExamManagementScreen> {
 
               // Exams List
               Expanded(
-                child: examProvider.exams.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.separated(
-                        itemCount: examProvider.exams.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 14),
-                        itemBuilder: (context, index) {
-                          final exam = examProvider.exams[index];
-                          return _buildExamCard(context, exam, examProvider);
-                        },
-                      ),
+                child: RefreshIndicator(
+                  color: AppColors.goldPrimary,
+                  backgroundColor: AppColors.cardDark,
+                  onRefresh: () async => examProvider.fetchInitialData(),
+                  child: examProvider.exams.isEmpty
+                      ? SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.5,
+                            child: _buildEmptyState(),
+                          ),
+                        )
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: examProvider.exams.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 14),
+                          itemBuilder: (context, index) {
+                            final exam = examProvider.exams[index];
+                            return _buildExamCard(context, exam, examProvider);
+                          },
+                        ),
+                ),
               ),
             ],
           ),

@@ -54,6 +54,11 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
             ],
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: AppColors.goldPrimary),
+              tooltip: 'Ma\'lumotlarni yangilash',
+              onPressed: () => testProvider.fetchData(),
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: ElevatedButton.icon(
@@ -79,16 +84,28 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
 
               // Tests List
               Expanded(
-                child: testProvider.tests.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.separated(
-                        itemCount: testProvider.tests.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 14),
-                        itemBuilder: (context, index) {
-                          final test = testProvider.tests[index];
-                          return _buildTestCard(context, test, testProvider);
-                        },
-                      ),
+                child: RefreshIndicator(
+                  color: AppColors.goldPrimary,
+                  backgroundColor: AppColors.cardDark,
+                  onRefresh: () async => testProvider.fetchData(),
+                  child: testProvider.tests.isEmpty
+                      ? SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.5,
+                            child: _buildEmptyState(),
+                          ),
+                        )
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: testProvider.tests.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 14),
+                          itemBuilder: (context, index) {
+                            final test = testProvider.tests[index];
+                            return _buildTestCard(context, test, testProvider);
+                          },
+                        ),
+                ),
               ),
             ],
           ),

@@ -1,8 +1,13 @@
 PODS:
   - device_info_plus (0.0.1):
     - FlutterMacOS
+  - file_picker_darwin (1.0.0):
+    - Flutter
+    - FlutterMacOS
   - FlutterMacOS (1.0.0)
   - nsd_macos (0.0.1):
+    - FlutterMacOS
+  - printing (1.0.0):
     - FlutterMacOS
   - rive_native (0.0.1):
     - FlutterMacOS
@@ -16,8 +21,10 @@ PODS:
 
 DEPENDENCIES:
   - device_info_plus (from `Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos`)
+  - file_picker_darwin (from `Flutter/ephemeral/.symlinks/plugins/file_picker_darwin/darwin`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - nsd_macos (from `Flutter/ephemeral/.symlinks/plugins/nsd_macos/macos`)
+  - printing (from `Flutter/ephemeral/.symlinks/plugins/printing/macos`)
   - rive_native (from `Flutter/ephemeral/.symlinks/plugins/rive_native/macos`)
   - screen_retriever_macos (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos`)
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -26,10 +33,14 @@ DEPENDENCIES:
 EXTERNAL SOURCES:
   device_info_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/device_info_plus/macos
+  file_picker_darwin:
+    :path: Flutter/ephemeral/.symlinks/plugins/file_picker_darwin/darwin
   FlutterMacOS:
     :path: Flutter/ephemeral
   nsd_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/nsd_macos/macos
+  printing:
+    :path: Flutter/ephemeral/.symlinks/plugins/printing/macos
   rive_native:
     :path: Flutter/ephemeral/.symlinks/plugins/rive_native/macos
   screen_retriever_macos:
@@ -41,8 +52,10 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   device_info_plus: 4fb280989f669696856f8b129e4a5e3cd6c48f76
+  file_picker_darwin: 4c2b9a50ea44cb3b071381ea0cf48591bdd80251
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   nsd_macos: 2bf2a077506c4aa72e448c0ee754e102624ade80
+  printing: c4cf83c78fd684f9bc318e6aadc18972aa48f617
   rive_native: 50e8013d024db2bc4ce3a39b5f0f38c74117b395
   screen_retriever_macos: c5508cc3c66ff0d4db650480cf0ab691e220d933
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb

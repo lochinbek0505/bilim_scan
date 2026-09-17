@@ -9,7 +9,7 @@ class AuthService {
   final ApiService _apiService = ApiService();
   final StorageService _storageService = StorageService();
 
-  /// Login request to http://localhost:4257/api/auth/login (TOKENSIZ SO'ROV)
+  /// Login request to http://localhost:4257/api/auth/login
   Future<LoginModel?> login({
     required String login,
     required String password,
@@ -30,23 +30,31 @@ class AuthService {
         return loginModel;
       }
     } on DioException catch (e) {
-      final errorMessage =
-          e.response?.data?['message'] ??
-          e.response?.data?['error'] ??
-          'Lokal server bilan bog\'lanishda xatolik yuz berdi (${e.message})';
-
+      String errorMessage = 'Login yoki parol xato!';
+      if (e.response != null && e.response?.data != null) {
+        if (e.response?.data is Map) {
+          errorMessage = e.response?.data['message'] ??
+              e.response?.data['error'] ??
+              'Login yoki parol xato!';
+        } else if (e.response?.data is String) {
+          errorMessage = e.response!.data as String;
+        }
+      } else if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        errorMessage = 'Server bilan bog\'lanishda xatolik yuz berdi!';
+      }
       if (kDebugMode) {
         debugPrint('❌ [AUTH LOGIN ERR]: $errorMessage');
       }
-
-      return null;
+      throw Exception(errorMessage);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ [AUTH UNKNOWN ERR]: $e');
       }
-      return null;
+      throw Exception('Login yoki parol xato!');
     }
-    return null;
+    throw Exception('Login yoki parol xato!');
   }
 
   Future<void> logout() async {

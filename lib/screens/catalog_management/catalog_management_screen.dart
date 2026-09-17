@@ -76,6 +76,16 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen>
               ),
             ],
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: AppColors.goldPrimary),
+              tooltip: 'Ma\'lumotlarni yangilash',
+              onPressed: () {
+                catalogProvider.fetchAllCatalogs();
+              },
+            ),
+            const SizedBox(width: 8),
+          ],
           bottom: TabBar(
             controller: _tabController,
             indicatorColor: AppColors.goldPrimary,

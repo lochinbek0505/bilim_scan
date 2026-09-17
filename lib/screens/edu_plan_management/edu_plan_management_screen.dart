@@ -53,6 +53,11 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
             ],
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: AppColors.goldPrimary),
+              tooltip: 'Ma\'lumotlarni yangilash',
+              onPressed: () => eduPlanProvider.fetchEduPlans(),
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: ElevatedButton.icon(
@@ -78,16 +83,28 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
 
               // Edu Plans List
               Expanded(
-                child: eduPlanProvider.eduPlans.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.separated(
-                        itemCount: eduPlanProvider.eduPlans.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 14),
-                        itemBuilder: (context, index) {
-                          final plan = eduPlanProvider.eduPlans[index];
-                          return _buildEduPlanCard(context, plan, eduPlanProvider);
-                        },
-                      ),
+                child: RefreshIndicator(
+                  color: AppColors.goldPrimary,
+                  backgroundColor: AppColors.cardDark,
+                  onRefresh: () async => eduPlanProvider.fetchEduPlans(),
+                  child: eduPlanProvider.eduPlans.isEmpty
+                      ? SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.5,
+                            child: _buildEmptyState(),
+                          ),
+                        )
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: eduPlanProvider.eduPlans.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 14),
+                          itemBuilder: (context, index) {
+                            final plan = eduPlanProvider.eduPlans[index];
+                            return _buildEduPlanCard(context, plan, eduPlanProvider);
+                          },
+                        ),
+                ),
               ),
             ],
           ),

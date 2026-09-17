@@ -66,6 +66,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             ],
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: AppColors.goldPrimary),
+              tooltip: 'Ma\'lumotlarni yangilash',
+              onPressed: () {
+                userProvider.fetchUsers();
+                catalogProvider.fetchAllCatalogs();
+              },
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: ElevatedButton.icon(
@@ -91,9 +99,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
               // Main Body Content (Hierarchical for USER, Direct for TEACHER/ADMIN)
               Expanded(
-                child: _activeRole == 'USER'
-                    ? _buildOquvchilarHierarchicalView(userProvider, catalogProvider)
-                    : _buildDirectUserList(userProvider, catalogProvider),
+                child: RefreshIndicator(
+                  color: AppColors.goldPrimary,
+                  backgroundColor: AppColors.cardDark,
+                  onRefresh: () async {
+                    await userProvider.fetchUsers();
+                    await catalogProvider.fetchAllCatalogs();
+                  },
+                  child: _activeRole == 'USER'
+                      ? _buildOquvchilarHierarchicalView(userProvider, catalogProvider)
+                      : _buildDirectUserList(userProvider, catalogProvider),
+                ),
               ),
             ],
           ),

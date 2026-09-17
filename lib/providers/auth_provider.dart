@@ -128,41 +128,34 @@ class AuthProvider extends ChangeNotifier {
     _statusLog = '${ApiConfig.baseUrl}${ApiConfig.login} so\'rovi yuborilmoqda...';
     notifyListeners();
 
-    // Call API Service
-    final result = await _authService.login(
-      login: loginText,
-      password: passwordText,
-    );
-
-    if (result != null) {
-      _currentUserModel = result;
-      _statusLog = 'Muvaffaqiyatli! Token va LoginModel saqlandi.';
-      notifyListeners();
-      await Future.delayed(const Duration(milliseconds: 300));
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } else {
-      // Create fallback demo LoginModel for local test if server connection fails
-      final fallbackModel = LoginModel(
-        token: 'demo_token_${DateTime.now().millisecondsSinceEpoch}',
-        user: User(
-          id: 'user_1025',
-          username: loginText,
-          role: _selectedRole.code,
-          guruh: _selectedGroup,
-        ),
+    try {
+      final result = await _authService.login(
+        login: loginText,
+        password: passwordText,
       );
 
-      _currentUserModel = fallbackModel;
-      await _storageService.saveLoginData(fallbackModel);
-
-      _statusLog = 'Lokal test: Token va LoginModel saqlandi!';
-      notifyListeners();
-      await Future.delayed(const Duration(milliseconds: 400));
+      if (result != null) {
+        _currentUserModel = result;
+        _statusLog = 'Muvaffaqiyatli! Token va LoginModel saqlandi.';
+        notifyListeners();
+        await Future.delayed(const Duration(milliseconds: 300));
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = 'Login yoki parol xato!';
+        _isLoading = false;
+        _statusLog = '';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      _errorMessage = msg.isEmpty ? 'Login yoki parol xato!' : msg;
       _isLoading = false;
+      _statusLog = '';
       notifyListeners();
-      return true;
+      return false;
     }
   }
 

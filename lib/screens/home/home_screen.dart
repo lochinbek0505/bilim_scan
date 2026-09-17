@@ -33,11 +33,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CatalogProvider>().fetchAllCatalogs();
-      context.read<UserProvider>().fetchUsers();
-      context.read<TestProvider>().fetchData();
-      _fetchLyceumStats();
+      _refreshData();
     });
+  }
+
+  Future<void> _refreshData() async {
+    await Future.wait([
+      context.read<CatalogProvider>().fetchAllCatalogs(),
+      context.read<UserProvider>().fetchUsers(),
+      context.read<TestProvider>().fetchData(),
+      _fetchLyceumStats(),
+    ]);
   }
 
   Future<void> _fetchLyceumStats() async {
@@ -128,6 +134,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh, color: AppColors.goldPrimary),
+              tooltip: 'Ma\'lumotlarni yangilash',
+              onPressed: _refreshData,
             ),
             IconButton(
               icon: const Icon(Icons.logout, color: AppColors.error),

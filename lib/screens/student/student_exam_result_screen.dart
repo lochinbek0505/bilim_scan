@@ -105,6 +105,17 @@ class StudentExamResultScreen extends StatelessWidget {
             'IMTIHON NATIJASI VA TAHLILI',
             style: AppTextStyles.titleHeader.copyWith(fontSize: 16, color: AppColors.textPrimary),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.home_outlined, color: AppColors.goldPrimary),
+              tooltip: 'Bosh sahifaga qaytish',
+              onPressed: () {
+                provider.resetCurrentExam();
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              },
+            ),
+            const SizedBox(width: 8),
+          ],
         ),
         body: Padding(
           padding: const EdgeInsets.all(24.0),
