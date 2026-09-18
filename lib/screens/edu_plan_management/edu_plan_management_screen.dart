@@ -429,7 +429,6 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
     String? selectedFanId = planToEdit?.fanId;
     String? selectedKafedraId = planToEdit?.kafedraId;
     String? selectedOquvYili = planToEdit?.oquvYili;
-    String? selectedOquvOyi = planToEdit?.oquvOyi;
 
     List<EduPlanTopicModel> currentTopics = planToEdit != null ? List.from(planToEdit.topics) : [];
 
@@ -460,18 +459,6 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
               ? selectedOquvYili
               : (oquvYiliItems.isNotEmpty ? oquvYiliItems.first.value : null);
           selectedOquvYili = oquvYiliValue;
-
-          final oquvOyiItems = eduPlanProvider.oquvOylari.map((val) {
-            return DropdownMenuItem<String>(
-              value: val,
-              child: Text(val, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-            );
-          }).toList();
-
-          final oquvOyiValue = oquvOyiItems.any((i) => i.value == selectedOquvOyi)
-              ? selectedOquvOyi
-              : (oquvOyiItems.isNotEmpty ? oquvOyiItems.first.value : null);
-          selectedOquvOyi = oquvOyiValue;
 
           return AlertDialog(
             backgroundColor: AppColors.cardDark,
@@ -565,57 +552,25 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
 
                     const SizedBox(height: 14),
 
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildFormLabel('O\'QUV YILI'),
-                              const SizedBox(height: 4),
-                              _buildDropdownContainer(
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String?>(
-                                    value: oquvYiliValue,
-                                    dropdownColor: AppColors.cardDark,
-                                    isExpanded: true,
-                                    hint: const Text('O\'quv yilini tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
-                                    items: oquvYiliItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
-                                    onChanged: (val) {
-                                      if (val != null) {
-                                        setModalState(() => selectedOquvYili = val);
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildFormLabel('O\'QUV OYI'),
-                              const SizedBox(height: 4),
-                              _buildDropdownContainer(
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String?>(
-                                    value: selectedOquvOyi,
-                                    dropdownColor: AppColors.cardDark,
-                                    isExpanded: true,
-                                    hint: const Text('O\'quv oyini tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
-                                    items: oquvOyiItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
-                                    onChanged: (val) {
-                                      if (val != null) {
-                                        setModalState(() => selectedOquvOyi = val);
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ],
+                        _buildFormLabel('O\'QUV YILI'),
+                        const SizedBox(height: 4),
+                        _buildDropdownContainer(
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String?>(
+                              value: oquvYiliValue,
+                              dropdownColor: AppColors.cardDark,
+                              isExpanded: true,
+                              hint: const Text('O\'quv yilini tanlang', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                              items: oquvYiliItems.map((item) => DropdownMenuItem<String?>(value: item.value, child: item.child)).toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setModalState(() => selectedOquvYili = val);
+                                }
+                              },
+                            ),
                           ),
                         ),
                       ],
@@ -707,7 +662,7 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                     fanId: selectedFanId ?? '',
                     kafedraId: selectedKafedraId ?? '',
                     oquvYili: selectedOquvYili ?? '',
-                    oquvOyi: selectedOquvOyi ?? '',
+                    oquvOyi: planToEdit?.oquvOyi,
                     topics: currentTopics,
                   );
 
