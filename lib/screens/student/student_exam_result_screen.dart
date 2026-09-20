@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/authenticated_image.dart';
+import '../../core/widgets/formatted_math_text.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../models/login_model.dart';
 import '../../providers/auth_provider.dart';
@@ -314,8 +315,8 @@ class StudentExamResultScreen extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
-                                      child: Text(
-                                        topicName,
+                                      child: FormattedMathText(
+                                        text: topicName,
                                         style: AppTextStyles.bodyText.copyWith(
                                           fontSize: 12,
                                           color: isMastered ? AppColors.emeraldAccent : AppColors.textPrimary,

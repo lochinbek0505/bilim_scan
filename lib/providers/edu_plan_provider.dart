@@ -441,7 +441,10 @@ class EduPlanProvider extends ChangeNotifier {
         .replaceAll('&gt;', '>')
         .replaceAll('&quot;', '"')
         .replaceAll('&apos;', "'")
-        .replaceAll('&amp;', '&');
+        .replaceAll('&amp;', '&')
+        .replaceAll('&#178;', '²')
+        .replaceAll('&#179;', '³')
+        .replaceAll('&#185;', '¹');
   }
 
 

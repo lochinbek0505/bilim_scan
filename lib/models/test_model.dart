@@ -37,6 +37,7 @@ class QuestionModel {
   final EduPlanTopicModel? mavzu;
   final String type; // SINGLE_CHOICE, MULTIPLE_CHOICE, OPEN, WRITTEN
   final int tr;
+  final double minimumTime;
   final List<int> relatedQuestionTrs;
   final List<String> relatedQuestionIds;
   final List<OptionModel> options;
@@ -46,6 +47,7 @@ class QuestionModel {
     required this.title,
     this.mavzu,
     required this.type,
+    required this.minimumTime,
     required this.tr,
     required this.relatedQuestionTrs,
     this.relatedQuestionIds = const [],
@@ -113,15 +115,90 @@ class QuestionModel {
 
     final qId = (json['id'] ?? json['_id'] ?? json['questionId'] ?? 'q_$trVal').toString();
 
+    final rawMinTime = json['minimumTime'] ?? json['minTime'];
+    double parsedMinTime = 0.0;
+    if (rawMinTime is num) {
+      parsedMinTime = rawMinTime.toDouble();
+    } else if (rawMinTime != null) {
+      parsedMinTime = double.tryParse(rawMinTime.toString()) ?? 0.0;
+    }
+
     return QuestionModel(
       id: qId.isNotEmpty ? qId : 'q_$trVal',
       title: (json['title'] ?? json['question'] ?? json['savol'] ?? json['name'] ?? '').toString(),
       mavzu: parsedMavzu,
+      minimumTime: parsedMinTime,
       type: (json['type'] ?? json['questionType'] ?? 'SINGLE_CHOICE').toString().toUpperCase(),
       tr: trVal,
       relatedQuestionTrs: parsedRelatedTrs,
       relatedQuestionIds: parsedRelatedIds,
       options: parsedOptions,
+    );
+  }
+
+  /// Calculates reading time for a text in seconds based on average reading speed (180 WPM = 3 words/sec).
+  static double calculateTextReadingTime(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return 0.0;
+    final wordCount = trimmed.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    if (wordCount == 0) return 0.0;
+    final timeInSeconds = wordCount / 3.0;
+    return double.parse(timeInSeconds.toStringAsFixed(2));
+  }
+
+  /// Calculates average reading time of question title + average reading time of the shortest option among options.
+  static double calculateQuestionReadingTime(String title, List<OptionModel> options) {
+    final double titleTime = calculateTextReadingTime(title);
+
+    double shortestOptionTime = 0.0;
+    if (options.isNotEmpty) {
+      final shortestOption = options.reduce(
+        (curr, next) => curr.text.length <= next.text.length ? curr : next,
+      );
+      shortestOptionTime = calculateTextReadingTime(shortestOption.text);
+    }
+
+    final total = titleTime + shortestOptionTime;
+    return double.parse(total.toStringAsFixed(2));
+  }
+
+  /// Calculates total minimum time (existing minimumTime + question & shortest option reading time).
+  double get calculatedMinimumTime {
+    final computedReadingTime = calculateQuestionReadingTime(title, options);
+    final total = minimumTime + computedReadingTime;
+    return double.parse(total.toStringAsFixed(2));
+  }
+
+  /// Returns a new QuestionModel with calculated minimum time assigned if current minimumTime is 0.
+  QuestionModel withCalculatedMinimumTime() {
+    final computed = calculateQuestionReadingTime(title, options);
+    final newMinTime = minimumTime > 0
+        ? double.parse((minimumTime + computed).toStringAsFixed(2))
+        : computed;
+    return copyWith(minimumTime: newMinTime);
+  }
+
+  QuestionModel copyWith({
+    String? id,
+    String? title,
+    EduPlanTopicModel? mavzu,
+    String? type,
+    int? tr,
+    double? minimumTime,
+    List<int>? relatedQuestionTrs,
+    List<String>? relatedQuestionIds,
+    List<OptionModel>? options,
+  }) {
+    return QuestionModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      mavzu: mavzu ?? this.mavzu,
+      type: type ?? this.type,
+      tr: tr ?? this.tr,
+      minimumTime: minimumTime ?? this.minimumTime,
+      relatedQuestionTrs: relatedQuestionTrs ?? this.relatedQuestionTrs,
+      relatedQuestionIds: relatedQuestionIds ?? this.relatedQuestionIds,
+      options: options ?? this.options,
     );
   }
 
@@ -133,6 +210,7 @@ class QuestionModel {
       'type': type,
       'tr': tr,
       'relatedQuestionTrs': relatedQuestionTrs,
+      'minimumTime': minimumTime > 0 ? minimumTime : calculatedMinimumTime,
       'options': options.map((e) => e.toJson()).toList(),
     };
   }

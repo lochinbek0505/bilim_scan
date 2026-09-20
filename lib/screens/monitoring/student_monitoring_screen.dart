@@ -755,6 +755,7 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                               ),
                             ],
                           ),
+
                           const SizedBox(height: 8),
                           _buildDetailRow('Imtihon nomi', examObj?.examName ?? sessionDetails?.name ?? 'Imtihon'),
                           _buildDetailRow('Kursant', userDetails?.fullName ?? studentName),
@@ -765,10 +766,49 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                             _buildDetailRow('Boshlangan vaqt', _formatDateTime(scoreResult.startedAt)),
                           if (scoreResult?.finishedAt != null && scoreResult!.finishedAt.isNotEmpty)
                             _buildDetailRow('Tugallangan vaqt', _formatDateTime(scoreResult.finishedAt)),
+                          if (examObj?.timeTakenSeconds != null)
+                            _buildDetailRow('Sarflangan vaqt', examObj!.formattedTimeTaken),
                           if (sessionDetails != null) ...[
                             _buildDetailRow('Ajratilgan vaqt', '${sessionDetails.durationMinutes} daqiqa'),
                             _buildDetailRow('Savollar soni', '${sessionDetails.questionCount} ta'),
                             _buildDetailRow('Holati', sessionDetails.status),
+                          ],
+
+                          if (examObj?.isSuspicious == true) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'SHUBHALI HOLAT ANIQLANGAN',
+                                          style: TextStyle(color: AppColors.error, fontSize: 11, fontWeight: FontWeight.bold),
+                                        ),
+                                        if (examObj?.suspicionReason != null && examObj!.suspicionReason!.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 2),
+                                            child: Text(
+                                              'Sabab: ${examObj.suspicionReason}',
+                                              style: const TextStyle(color: AppColors.textPrimary, fontSize: 11),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ],
                       ),
@@ -2055,6 +2095,7 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
     final rawMastery = exam.masteryLevel;
     final translatedMastery = _translateMastery(rawMastery, pct);
     final mColor = _getMasteryColor(rawMastery, pct);
+    final bool isSuspicious = exam.isSuspicious == true;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -2062,14 +2103,21 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
       decoration: BoxDecoration(
         color: AppColors.backgroundDark,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.cardBorder),
+        border: Border.all(
+          color: isSuspicious ? AppColors.error.withValues(alpha: 0.6) : AppColors.cardBorder,
+          width: isSuspicious ? 1.5 : 1.0,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.assignment_outlined, color: AppColors.info, size: 16),
+              Icon(
+                isSuspicious ? Icons.warning_amber_rounded : Icons.assignment_outlined,
+                color: isSuspicious ? AppColors.error : AppColors.info,
+                size: 16,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -2077,6 +2125,28 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
                   style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ),
+              if (isSuspicious) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.gavel_rounded, color: AppColors.error, size: 10),
+                      SizedBox(width: 3),
+                      Text(
+                        'Shubhali',
+                        style: TextStyle(color: AppColors.error, fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               Text(
                 '${pct.toStringAsFixed(1)}%',
                 style: TextStyle(color: mColor, fontSize: 13, fontWeight: FontWeight.bold),
@@ -2095,15 +2165,46 @@ class _StudentMonitoringScreenState extends State<StudentMonitoringScreen> {
               ),
             ],
           ),
+          if (isSuspicious && exam.suspicionReason != null && exam.suspicionReason!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: AppColors.error, size: 12),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Sabab: ${exam.suspicionReason}',
+                      style: const TextStyle(color: AppColors.error, fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 6),
           Row(
             children: [
-              Icon(Icons.access_time_rounded, color: AppColors.textMuted, size: 12),
+              const Icon(Icons.access_time_rounded, color: AppColors.textMuted, size: 12),
               const SizedBox(width: 4),
               Text(
                 exam.formattedDate,
                 style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
               ),
+              if (exam.timeTakenSeconds != null) ...[
+                const SizedBox(width: 12),
+                const Icon(Icons.timer_outlined, color: AppColors.textMuted, size: 12),
+                const SizedBox(width: 4),
+                Text(
+                  'Vaqt: ${exam.formattedTimeTaken}',
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                ),
+              ],
               const Spacer(),
 
               // Clickable examSessionId button

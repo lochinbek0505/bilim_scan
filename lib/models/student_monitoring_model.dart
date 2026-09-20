@@ -5,12 +5,20 @@ class Exam {
   String? masteryLevel;
   num? percentage;
 
+  // Yangi qo'shilgan maydonlar
+  bool? isSuspicious;
+  String? suspicionReason;
+  int? timeTakenSeconds;
+
   Exam({
     this.date,
     this.examName,
     this.examSessionId,
     this.masteryLevel,
     this.percentage,
+    this.isSuspicious,
+    this.suspicionReason,
+    this.timeTakenSeconds,
   });
 
   String get formattedDate {
@@ -28,12 +36,28 @@ class Exam {
     }
   }
 
+  String get formattedTimeTaken {
+    if (timeTakenSeconds == null) return "Ko'rsatilmagan";
+    final minutes = timeTakenSeconds! ~/ 60;
+    final seconds = timeTakenSeconds! % 60;
+    if (minutes > 0 && seconds > 0) {
+      return "$minutes daq $seconds son";
+    } else if (minutes > 0) {
+      return "$minutes daqiqa";
+    } else {
+      return "$seconds soniya";
+    }
+  }
+
   Exam copyWith({
     dynamic date,
     String? examName,
     String? examSessionId,
     String? masteryLevel,
     num? percentage,
+    bool? isSuspicious,
+    String? suspicionReason,
+    int? timeTakenSeconds,
   }) =>
       Exam(
         date: date ?? this.date,
@@ -41,6 +65,9 @@ class Exam {
         examSessionId: examSessionId ?? this.examSessionId,
         masteryLevel: masteryLevel ?? this.masteryLevel,
         percentage: percentage ?? this.percentage,
+        isSuspicious: isSuspicious ?? this.isSuspicious,
+        suspicionReason: suspicionReason ?? this.suspicionReason,
+        timeTakenSeconds: timeTakenSeconds ?? this.timeTakenSeconds,
       );
 
   Map<String, dynamic> toJson() {
@@ -50,6 +77,9 @@ class Exam {
     map["examSessionId"] = examSessionId;
     map["masteryLevel"] = masteryLevel;
     map["percentage"] = percentage;
+    map["isSuspicious"] = isSuspicious;
+    map["suspicionReason"] = suspicionReason;
+    map["timeTakenSeconds"] = timeTakenSeconds;
     return map;
   }
 
@@ -60,6 +90,17 @@ class Exam {
     examSessionId = json["examSessionId"];
     masteryLevel = json["masteryLevel"];
     percentage = json["percentage"];
+    if (json["isSuspicious"] is bool) {
+      isSuspicious = json["isSuspicious"];
+    } else if (json["isSuspicious"] != null) {
+      isSuspicious = json["isSuspicious"].toString().toLowerCase() == 'true';
+    }
+    suspicionReason = json["suspicionReason"]?.toString();
+    if (json["timeTakenSeconds"] is int) {
+      timeTakenSeconds = json["timeTakenSeconds"];
+    } else if (json["timeTakenSeconds"] != null) {
+      timeTakenSeconds = int.tryParse(json["timeTakenSeconds"].toString());
+    }
   }
 }
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/widgets/formatted_math_text.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../models/test_model.dart';
 import '../../models/edu_plan_model.dart';
@@ -905,8 +906,34 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                               ),
                               const SizedBox(width: 8),
 
-                              // TYPE BADGE
-                              _buildQuestionTypeBadge(q.type),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // MIN TIME BADGE
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.info.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: AppColors.info.withValues(alpha: 0.4)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.timer_outlined, size: 12, color: AppColors.info),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Min: ${(q.minimumTime > 0 ? q.minimumTime : q.calculatedMinimumTime).toStringAsFixed(1)}s',
+                                          style: AppTextStyles.badgeText.copyWith(fontSize: 10, color: AppColors.info),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  // TYPE BADGE
+                                  _buildQuestionTypeBadge(q.type),
+                                ],
+                              ),
                             ],
                           ),
 
@@ -937,7 +964,7 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                           const SizedBox(height: 10),
 
                           // QUESTION TITLE
-                          Text(q.title, style: AppTextStyles.bodyText.copyWith(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                          FormattedMathText(text: q.title, style: AppTextStyles.bodyText.copyWith(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
 
                           // OPTIONS LIST
                           if (q.options.isNotEmpty) ...[
@@ -957,7 +984,7 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
                                       children: [
                                         Icon(opt.isTrue ? Icons.check_circle : Icons.radio_button_unchecked, size: 14, color: opt.isTrue ? AppColors.emeraldAccent : AppColors.textMuted),
                                         const SizedBox(width: 8),
-                                        Expanded(child: Text(opt.text, style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: opt.isTrue ? AppColors.emeraldAccent : AppColors.textSecondary))),
+                                        Expanded(child: FormattedMathText(text: opt.text, style: AppTextStyles.bodyText.copyWith(fontSize: 12, color: opt.isTrue ? AppColors.emeraldAccent : AppColors.textSecondary))),
                                       ],
                                     ),
                                   ),

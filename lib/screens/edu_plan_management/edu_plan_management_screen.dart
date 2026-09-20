@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/widgets/formatted_math_text.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../models/edu_plan_model.dart';
 import '../../providers/catalog_provider.dart';
@@ -744,7 +745,7 @@ class _EduPlanManagementScreenState extends State<EduPlanManagementScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(t.name, style: AppTextStyles.bodyText.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                                FormattedMathText(text: t.name, style: AppTextStyles.bodyText.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                                 const SizedBox(height: 2),
                                 Text('Turi: ${t.type} • ${t.soat} soat', style: AppTextStyles.bodyText.copyWith(fontSize: 11, color: AppColors.textMuted)),
                               ],

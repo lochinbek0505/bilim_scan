@@ -204,7 +204,9 @@ class TestProvider extends ChangeNotifier {
   Future<bool> addTest(TestModel test) async {
     isLoading = true;
     notifyListeners();
-    final result = await _service.createTest(test);
+    final processedQuestions = test.questions.map((q) => q.withCalculatedMinimumTime()).toList();
+    final testToSend = test.copyWith(questions: processedQuestions);
+    final result = await _service.createTest(testToSend);
     if (result != null) {
       _tests.add(result);
       isLoading = false;
@@ -219,11 +221,13 @@ class TestProvider extends ChangeNotifier {
   Future<bool> updateTest(TestModel test) async {
     isLoading = true;
     notifyListeners();
-    final success = await _service.updateTest(test);
+    final processedQuestions = test.questions.map((q) => q.withCalculatedMinimumTime()).toList();
+    final testToSend = test.copyWith(questions: processedQuestions);
+    final success = await _service.updateTest(testToSend);
     if (success) {
       final index = _tests.indexWhere((t) => t.id == test.id);
       if (index != -1) {
-        _tests[index] = test;
+        _tests[index] = testToSend;
       }
     }
     isLoading = false;
@@ -248,7 +252,7 @@ class TestProvider extends ChangeNotifier {
     try {
       final List<dynamic> jsonList = jsonDecode(jsonContent);
       return jsonList
-          .map((q) => QuestionModel.fromJson(q as Map<String, dynamic>))
+          .map((q) => QuestionModel.fromJson(q as Map<String, dynamic>).withCalculatedMinimumTime())
           .toList();
     } catch (e) {
       debugPrint('JSON Parse error in questions: $e');
@@ -278,13 +282,9 @@ class TestProvider extends ChangeNotifier {
       List<String> lines = [];
       for (final m in pMatches) {
         final pContent = m.group(1) ?? '';
-        final tMatches = RegExp(
-          r'<w:t[^>]*>(.*?)</w:t>',
-          dotAll: true,
-        ).allMatches(pContent);
-        final lineText = tMatches.map((t) => t.group(1) ?? '').join('').trim();
-        if (lineText.isNotEmpty) {
-          lines.add(_unescapeXml(lineText));
+        final parsedLine = _extractParagraphTextWithMath(pContent).trim();
+        if (parsedLine.isNotEmpty) {
+          lines.add(parsedLine);
         }
       }
 
@@ -297,13 +297,253 @@ class TestProvider extends ChangeNotifier {
     }
   }
 
+  String _extractParagraphTextWithMath(String pContent) {
+    final sb = StringBuffer();
+    String xml = pContent;
+
+    // 1. Replace math fractions <m:f> -> (num/den)
+    xml = xml.replaceAllMapped(RegExp(r'<m:f[^>]*>(.*?)</m:f>', dotAll: true), (match) {
+      final fBody = match.group(1) ?? '';
+      final numMatch = RegExp(r'<m:num[^>]*>(.*?)</m:num>', dotAll: true).firstMatch(fBody);
+      final denMatch = RegExp(r'<m:den[^>]*>(.*?)</m:den>', dotAll: true).firstMatch(fBody);
+      final numText = _extractTextFromXmlChunk(numMatch?.group(1) ?? '');
+      final denText = _extractTextFromXmlChunk(denMatch?.group(1) ?? '');
+      if (numText.isNotEmpty && denText.isNotEmpty) {
+        return '($numText/$denText)';
+      }
+      return _extractTextFromXmlChunk(fBody);
+    });
+
+    // 2. Replace superscripts <m:sSup> -> base^exp
+    xml = xml.replaceAllMapped(RegExp(r'<m:sSup[^>]*>(.*?)</m:sSup>', dotAll: true), (match) {
+      final body = match.group(1) ?? '';
+      final eMatch = RegExp(r'<m:e[^>]*>(.*?)</m:e>', dotAll: true).firstMatch(body);
+      final supMatch = RegExp(r'<m:sup[^>]*>(.*?)</m:sup>', dotAll: true).firstMatch(body);
+      final baseText = _extractTextFromXmlChunk(eMatch?.group(1) ?? '');
+      final supText = _extractTextFromXmlChunk(supMatch?.group(1) ?? '');
+      if (supText.isNotEmpty) {
+        return '$baseText${_toSuperscript(supText)}';
+      }
+      return baseText;
+    });
+
+    // 3. Replace subscripts <m:sSub> -> base_sub
+    xml = xml.replaceAllMapped(RegExp(r'<m:sSub[^>]*>(.*?)</m:sSub>', dotAll: true), (match) {
+      final body = match.group(1) ?? '';
+      final eMatch = RegExp(r'<m:e[^>]*>(.*?)</m:e>', dotAll: true).firstMatch(body);
+      final subMatch = RegExp(r'<m:sub[^>]*>(.*?)</m:sub>', dotAll: true).firstMatch(body);
+      final baseText = _extractTextFromXmlChunk(eMatch?.group(1) ?? '');
+      final subText = _extractTextFromXmlChunk(subMatch?.group(1) ?? '');
+      if (subText.isNotEmpty) {
+        return '$baseText${_toSubscript(subText)}';
+      }
+      return baseText;
+    });
+
+    // 4. Replace sub-sup <m:sSubSup> -> base_sub^sup
+    xml = xml.replaceAllMapped(RegExp(r'<m:sSubSup[^>]*>(.*?)</m:sSubSup>', dotAll: true), (match) {
+      final body = match.group(1) ?? '';
+      final eMatch = RegExp(r'<m:e[^>]*>(.*?)</m:e>', dotAll: true).firstMatch(body);
+      final subMatch = RegExp(r'<m:sub[^>]*>(.*?)</m:sub>', dotAll: true).firstMatch(body);
+      final supMatch = RegExp(r'<m:sup[^>]*>(.*?)</m:sup>', dotAll: true).firstMatch(body);
+      final baseText = _extractTextFromXmlChunk(eMatch?.group(1) ?? '');
+      final subText = _extractTextFromXmlChunk(subMatch?.group(1) ?? '');
+      final supText = _extractTextFromXmlChunk(supMatch?.group(1) ?? '');
+      return '$baseText${_toSubscript(subText)}${_toSuperscript(supText)}';
+    });
+
+    // 5. Replace radicals <m:rad> -> √(elem)
+    xml = xml.replaceAllMapped(RegExp(r'<m:rad[^>]*>(.*?)</m:rad>', dotAll: true), (match) {
+      final body = match.group(1) ?? '';
+      final degMatch = RegExp(r'<m:deg[^>]*>(.*?)</m:deg>', dotAll: true).firstMatch(body);
+      final eMatch = RegExp(r'<m:e[^>]*>(.*?)</m:e>', dotAll: true).firstMatch(body);
+      final degText = _extractTextFromXmlChunk(degMatch?.group(1) ?? '');
+      final elemText = _extractTextFromXmlChunk(eMatch?.group(1) ?? '');
+      if (degText.isNotEmpty && degText != '2') {
+        return '${_toSuperscript(degText)}√($elemText)';
+      }
+      return '√($elemText)';
+    });
+
+    // 6. Replace runs <w:r> considering superscripts/subscripts in <w:rPr>
+    // However, if we already parsed math elements, we should only parse non-math runs, 
+    // or just parse everything left if sb is empty. 
+    // To handle mixed text and math properly, we iterate over both <m:oMath> and <w:r> sequentially,
+    // but a simpler fallback is to just strip remaining xml tags and extract text.
+    
+    // Instead of doing regex replace for math and then regex for runs which can cause double-parsing or missed text,
+    // we should extract text from all <w:r> and <m:r> tags sequentially.
+    
+    return _parseParagraphSequentially(pContent).trim();
+  }
+
+  String _parseParagraphSequentially(String pContent) {
+    final sb = StringBuffer();
+    // Match either an Office Math element <m:oMath>...</m:oMath> or a text run <w:r>...</w:r>
+    final regex = RegExp(r'(<m:oMath[^>]*>.*?</m:oMath>)|(<w:r[^>]*>.*?</w:r>)', dotAll: true);
+    final matches = regex.allMatches(pContent);
+
+    if (matches.isEmpty) {
+      // Fallback: just extract <w:t> tags
+      final tMatches = RegExp(r'<(?:w|m):t[^>]*>(.*?)</(?:w|m):t>', dotAll: true).allMatches(pContent);
+      return tMatches.map((t) => _unescapeXml(t.group(1) ?? '')).join('').trim();
+    }
+
+    for (final match in matches) {
+      if (match.group(1) != null) {
+        // It's a Math block
+        sb.write(_parseMathBlock(match.group(1)!));
+      } else if (match.group(2) != null) {
+        // It's a text run
+        sb.write(_parseTextRun(match.group(2)!));
+      }
+    }
+    return sb.toString();
+  }
+
+  String _parseTextRun(String rContent) {
+    final isSup = rContent.contains('val="superscript"');
+    final isSub = rContent.contains('val="subscript"');
+
+    final tMatches = RegExp(r'<w:t[^>]*>(.*?)</w:t>', dotAll: true).allMatches(rContent);
+    var text = tMatches.map((t) => t.group(1) ?? '').join('');
+
+    final symMatch = RegExp(r'<w:sym[^>]*w:char="([^"]+)"[^>]*>', dotAll: true).firstMatch(rContent);
+    if (symMatch != null) {
+      final hex = symMatch.group(1) ?? '';
+      final charCode = int.tryParse(hex, radix: 16);
+      if (charCode != null) {
+        text += String.fromCharCode(charCode);
+      }
+    }
+
+    if (text.isEmpty) return '';
+
+    text = _unescapeXml(text);
+    if (isSup) return _toSuperscript(text);
+    if (isSub) return _toSubscript(text);
+    return text;
+  }
+
+  String _parseMathBlock(String mContent) {
+    String xml = mContent;
+
+    // 1. Replace math fractions <m:f> -> (num/den)
+    xml = xml.replaceAllMapped(RegExp(r'<m:f(?:>|\s[^>]*>)(.*?)</m:f>', dotAll: true), (match) {
+      final fBody = match.group(1) ?? '';
+      final numMatch = RegExp(r'<m:num(?:>|\s[^>]*>)(.*?)</m:num>', dotAll: true).firstMatch(fBody);
+      final denMatch = RegExp(r'<m:den(?:>|\s[^>]*>)(.*?)</m:den>', dotAll: true).firstMatch(fBody);
+      final numText = _extractTextFromXmlChunk(numMatch?.group(1) ?? '');
+      final denText = _extractTextFromXmlChunk(denMatch?.group(1) ?? '');
+      if (numText.isNotEmpty && denText.isNotEmpty) {
+        return '($numText/$denText)';
+      }
+      return _extractTextFromXmlChunk(fBody);
+    });
+
+    // 2. Replace superscripts <m:sSup> -> base^exp
+    xml = xml.replaceAllMapped(RegExp(r'<m:sSup(?:>|\s[^>]*>)(.*?)</m:sSup>', dotAll: true), (match) {
+      final body = match.group(1) ?? '';
+      final eMatch = RegExp(r'<m:e(?:>|\s[^>]*>)(.*?)</m:e>', dotAll: true).firstMatch(body);
+      final supMatch = RegExp(r'<m:sup(?:>|\s[^>]*>)(.*?)</m:sup>', dotAll: true).firstMatch(body);
+      final baseText = _extractTextFromXmlChunk(eMatch?.group(1) ?? '');
+      final supText = _extractTextFromXmlChunk(supMatch?.group(1) ?? '');
+      if (supText.isNotEmpty) {
+        return '$baseText${_toSuperscript(supText)}';
+      }
+      return baseText;
+    });
+
+    // 3. Replace subscripts <m:sSub> -> base_sub
+    xml = xml.replaceAllMapped(RegExp(r'<m:sSub(?:>|\s[^>]*>)(.*?)</m:sSub>', dotAll: true), (match) {
+      final body = match.group(1) ?? '';
+      final eMatch = RegExp(r'<m:e(?:>|\s[^>]*>)(.*?)</m:e>', dotAll: true).firstMatch(body);
+      final subMatch = RegExp(r'<m:sub(?:>|\s[^>]*>)(.*?)</m:sub>', dotAll: true).firstMatch(body);
+      final baseText = _extractTextFromXmlChunk(eMatch?.group(1) ?? '');
+      final subText = _extractTextFromXmlChunk(subMatch?.group(1) ?? '');
+      if (subText.isNotEmpty) {
+        return '$baseText${_toSubscript(subText)}';
+      }
+      return baseText;
+    });
+
+    // 4. Replace sub-sup <m:sSubSup> -> base_sub^sup
+    xml = xml.replaceAllMapped(RegExp(r'<m:sSubSup(?:>|\s[^>]*>)(.*?)</m:sSubSup>', dotAll: true), (match) {
+      final body = match.group(1) ?? '';
+      final eMatch = RegExp(r'<m:e(?:>|\s[^>]*>)(.*?)</m:e>', dotAll: true).firstMatch(body);
+      final subMatch = RegExp(r'<m:sub(?:>|\s[^>]*>)(.*?)</m:sub>', dotAll: true).firstMatch(body);
+      final supMatch = RegExp(r'<m:sup(?:>|\s[^>]*>)(.*?)</m:sup>', dotAll: true).firstMatch(body);
+      final baseText = _extractTextFromXmlChunk(eMatch?.group(1) ?? '');
+      final subText = _extractTextFromXmlChunk(subMatch?.group(1) ?? '');
+      final supText = _extractTextFromXmlChunk(supMatch?.group(1) ?? '');
+      return '$baseText${_toSubscript(subText)}${_toSuperscript(supText)}';
+    });
+
+    // 5. Replace radicals <m:rad> -> √(elem)
+    xml = xml.replaceAllMapped(RegExp(r'<m:rad(?:>|\s[^>]*>)(.*?)</m:rad>', dotAll: true), (match) {
+      final body = match.group(1) ?? '';
+      final degMatch = RegExp(r'<m:deg(?:>|\s[^>]*>)(.*?)</m:deg>', dotAll: true).firstMatch(body);
+      final eMatch = RegExp(r'<m:e(?:>|\s[^>]*>)(.*?)</m:e>', dotAll: true).firstMatch(body);
+      final degText = _extractTextFromXmlChunk(degMatch?.group(1) ?? '');
+      final elemText = _extractTextFromXmlChunk(eMatch?.group(1) ?? '');
+      if (degText.isNotEmpty && degText != '2') {
+        return '${_toSuperscript(degText)}√($elemText)';
+      }
+      return '√($elemText)';
+    });
+
+    // Finally extract all remaining text from <m:t> or <w:t> tags
+    return _extractTextFromXmlChunk(xml);
+  }
+
+  String _extractTextFromXmlChunk(String chunk) {
+    if (chunk.isEmpty) return '';
+    final tMatches = RegExp(r'<(?:w|m):t[^>]*>(.*?)</(?:w|m):t>', dotAll: true).allMatches(chunk);
+    return tMatches.map((t) => _unescapeXml(t.group(1) ?? '')).join('');
+  }
+
+  String _toSuperscript(String str) {
+    const normal = '0123456789+-=()nixyabcdekmpt';
+    const superChars = '⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ⁿⁱˣʸªᵇᶜᵈᵉᵏᵐᵖᵗ';
+    final sb = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      final char = str[i];
+      final idx = normal.indexOf(char);
+      if (idx != -1) {
+        sb.write(superChars[idx]);
+      } else {
+        sb.write(char);
+      }
+    }
+    return sb.toString();
+  }
+
+  String _toSubscript(String str) {
+    const normal = '0123456789+-=()aeoxhklmnpst';
+    const subChars = '₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑₒₓₕₖₗₘₙₚₛₜ';
+    final sb = StringBuffer();
+    for (int i = 0; i < str.length; i++) {
+      final char = str[i];
+      final idx = normal.indexOf(char);
+      if (idx != -1) {
+        sb.write(subChars[idx]);
+      } else {
+        sb.write(char);
+      }
+    }
+    return sb.toString();
+  }
+
   String _unescapeXml(String input) {
     return input
         .replaceAll('&lt;', '<')
         .replaceAll('&gt;', '>')
         .replaceAll('&quot;', '"')
         .replaceAll('&apos;', "'")
-        .replaceAll('&amp;', '&');
+        .replaceAll('&amp;', '&')
+        .replaceAll('&#178;', '²')
+        .replaceAll('&#179;', '³')
+        .replaceAll('&#185;', '¹');
   }
 
   List<QuestionModel> _parseQuestionsFromLines(
@@ -362,7 +602,7 @@ class TestProvider extends ChangeNotifier {
           title: title,
           mavzu: matchedTopic,
           type: 'SINGLE_CHOICE',
-          // Will be finalized later
+          minimumTime: 0,
           tr: tr,
           relatedQuestionTrs: related,
           options: [],
@@ -375,6 +615,7 @@ class TestProvider extends ChangeNotifier {
             mavzu: currentQuestion.mavzu,
             type: 'WRITTEN',
             tr: currentQuestion.tr,
+            minimumTime: 0,
             relatedQuestionTrs: currentQuestion.relatedQuestionTrs,
             options: currentQuestion.options,
           );
@@ -398,6 +639,7 @@ class TestProvider extends ChangeNotifier {
             mavzu: currentQuestion.mavzu,
             type: currentQuestion.type,
             tr: currentQuestion.tr,
+            minimumTime: 0,
             relatedQuestionTrs: currentQuestion.relatedQuestionTrs,
             options: currentQuestion.options,
           );
@@ -420,31 +662,41 @@ class TestProvider extends ChangeNotifier {
   }
 
   QuestionModel _finalizeQuestionType(QuestionModel q) {
-    if (q.type == 'WRITTEN') return q; // already set by @
+    final QuestionModel finalized = () {
+      if (q.type == 'WRITTEN') return q; // already set by @
 
-    if (q.options.isEmpty) {
-      return QuestionModel(
-        title: q.title,
-        mavzu: q.mavzu,
-        type: 'OPEN',
-        tr: q.tr,
-        relatedQuestionTrs: q.relatedQuestionTrs,
-        options: q.options,
-      );
-    }
+      if (q.options.isEmpty) {
+        return QuestionModel(
+          id: q.id,
+          title: q.title,
+          mavzu: q.mavzu,
+          type: 'OPEN',
+          tr: q.tr,
+          minimumTime: q.minimumTime,
+          relatedQuestionTrs: q.relatedQuestionTrs,
+          relatedQuestionIds: q.relatedQuestionIds,
+          options: q.options,
+        );
+      }
 
-    int trueCount = q.options.where((o) => o.isTrue).length;
-    if (trueCount > 1) {
-      return QuestionModel(
-        title: q.title,
-        mavzu: q.mavzu,
-        type: 'MULTIPLE_CHOICE',
-        tr: q.tr,
-        relatedQuestionTrs: q.relatedQuestionTrs,
-        options: q.options,
-      );
-    }
+      int trueCount = q.options.where((o) => o.isTrue).length;
+      if (trueCount > 1) {
+        return QuestionModel(
+          id: q.id,
+          title: q.title,
+          mavzu: q.mavzu,
+          type: 'MULTIPLE_CHOICE',
+          tr: q.tr,
+          minimumTime: q.minimumTime,
+          relatedQuestionTrs: q.relatedQuestionTrs,
+          relatedQuestionIds: q.relatedQuestionIds,
+          options: q.options,
+        );
+      }
 
-    return q; // SINGLE_CHOICE default
+      return q; // SINGLE_CHOICE default
+    }();
+
+    return finalized.withCalculatedMinimumTime();
   }
 }

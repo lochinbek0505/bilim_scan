@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/widgets/authenticated_image.dart';
+import '../../core/widgets/formatted_math_text.dart';
 import '../../core/widgets/tactical_background.dart';
 import '../../models/login_model.dart';
 import '../../models/student_exam_start_model.dart';
@@ -345,8 +346,8 @@ class _StudentTestTakingScreenState extends State<StudentTestTakingScreen> {
           const SizedBox(height: 12),
 
           // Title
-          Text(
-            question.title ?? '',
+          FormattedMathText(
+            text: question.title ?? '',
             style: AppTextStyles.bodyText.copyWith(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -407,8 +408,8 @@ class _StudentTestTakingScreenState extends State<StudentTestTakingScreen> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      optionText,
+                    child: FormattedMathText(
+                      text: optionText,
                       style: AppTextStyles.bodyText.copyWith(
                         color: isSelected ? AppColors.emeraldAccent : AppColors.textPrimary,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -459,8 +460,8 @@ class _StudentTestTakingScreenState extends State<StudentTestTakingScreen> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      optionText,
+                    child: FormattedMathText(
+                      text: optionText,
                       style: AppTextStyles.bodyText.copyWith(
                         color: isSelected ? AppColors.emeraldAccent : AppColors.textPrimary,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

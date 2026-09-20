@@ -90,7 +90,14 @@ class WordExportService {
             for (var subject in month.subjects) {
               String examsHtml = "<ul>";
               for (var exam in subject.exams) {
-                examsHtml += "<li>${exam.examName ?? 'Imtihon'} (${exam.percentage?.toStringAsFixed(1) ?? '0.0'}% - ${_translateMastery(exam.percentage, exam.masteryLevel)})</li>";
+                var examText = "${exam.examName ?? 'Imtihon'} (${exam.percentage?.toStringAsFixed(1) ?? '0.0'}% - ${_translateMastery(exam.percentage, exam.masteryLevel)})";
+                if (exam.timeTakenSeconds != null) {
+                  examText += " - Vaqt: ${exam.formattedTimeTaken}";
+                }
+                if (exam.isSuspicious == true) {
+                  examText += " <span style='color:red; font-weight:bold;'>[SHUBHALI: ${exam.suspicionReason ?? "Sabab ko'rsatilmadi"}]</span>";
+                }
+                examsHtml += "<li>$examText</li>";
               }
               examsHtml += "</ul>";
               

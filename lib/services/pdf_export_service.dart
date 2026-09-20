@@ -144,9 +144,16 @@ class PdfExportService {
                     headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
                     headers: ['Fan nomi', 'O\'rtacha foiz', 'O\'zlashtirish', 'Imtihonlar'],
                     data: month.subjects.map((subject) {
-                      final examsList = subject.exams
-                          .map((e) => '${e.examName ?? "Imtihon"}: ${e.percentage?.toStringAsFixed(1) ?? "0.0"}% (${_translateMastery(e.percentage, e.masteryLevel)})')
-                          .join('\n');
+                      final examsList = subject.exams.map((e) {
+                        var line = '${e.examName ?? "Imtihon"}: ${e.percentage?.toStringAsFixed(1) ?? "0.0"}% (${_translateMastery(e.percentage, e.masteryLevel)})';
+                        if (e.timeTakenSeconds != null) {
+                          line += '\n  • Vaqt: ${e.formattedTimeTaken}';
+                        }
+                        if (e.isSuspicious == true) {
+                          line += '\n  • [SHUBHALI]: ${e.suspicionReason ?? "Sabab ko'rsatilmadi"}';
+                        }
+                        return line;
+                      }).join('\n');
                       return [
                         subject.subjectName ?? "Noma'lum fan",
                         '${subject.averagePercentage?.toStringAsFixed(1) ?? '0.0'}%',
@@ -307,9 +314,16 @@ class PdfExportService {
                           headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
                           headers: ['Fan nomi', 'O\'rtacha foiz', 'O\'zlashtirish', 'Imtihonlar'],
                           data: month.subjects.map((subject) {
-                            final examsList = subject.exams
-                                .map((e) => '${e.examName ?? "Imtihon"}: ${e.percentage?.toStringAsFixed(1) ?? "0.0"}% (${_translateMastery(e.percentage, e.masteryLevel)})')
-                                .join('\n');
+                            final examsList = subject.exams.map((e) {
+                              var line = '${e.examName ?? "Imtihon"}: ${e.percentage?.toStringAsFixed(1) ?? "0.0"}% (${_translateMastery(e.percentage, e.masteryLevel)})';
+                              if (e.timeTakenSeconds != null) {
+                                line += '\n  • Vaqt: ${e.formattedTimeTaken}';
+                              }
+                              if (e.isSuspicious == true) {
+                                line += '\n  • [SHUBHALI]: ${e.suspicionReason ?? "Sabab ko'rsatilmadi"}';
+                              }
+                              return line;
+                            }).join('\n');
                             return [
                               subject.subjectName ?? "Noma'lum fan",
                               '${subject.averagePercentage?.toStringAsFixed(1) ?? '0.0'}%',
