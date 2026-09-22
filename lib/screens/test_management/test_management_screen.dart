@@ -479,6 +479,7 @@ class _TestManagementScreenState extends State<TestManagementScreen> {
               child: Text(e, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
             );
           }).toList();
+
           final oquvYiliValue = oquvYiliItems.any((i) => i.value == selectedOquvYili)
               ? selectedOquvYili
               : (oquvYiliItems.isNotEmpty ? oquvYiliItems.first.value : null);

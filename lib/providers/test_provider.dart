@@ -298,82 +298,6 @@ class TestProvider extends ChangeNotifier {
   }
 
   String _extractParagraphTextWithMath(String pContent) {
-    final sb = StringBuffer();
-    String xml = pContent;
-
-    // 1. Replace math fractions <m:f> -> (num/den)
-    xml = xml.replaceAllMapped(RegExp(r'<m:f[^>]*>(.*?)</m:f>', dotAll: true), (match) {
-      final fBody = match.group(1) ?? '';
-      final numMatch = RegExp(r'<m:num[^>]*>(.*?)</m:num>', dotAll: true).firstMatch(fBody);
-      final denMatch = RegExp(r'<m:den[^>]*>(.*?)</m:den>', dotAll: true).firstMatch(fBody);
-      final numText = _extractTextFromXmlChunk(numMatch?.group(1) ?? '');
-      final denText = _extractTextFromXmlChunk(denMatch?.group(1) ?? '');
-      if (numText.isNotEmpty && denText.isNotEmpty) {
-        return '($numText/$denText)';
-      }
-      return _extractTextFromXmlChunk(fBody);
-    });
-
-    // 2. Replace superscripts <m:sSup> -> base^exp
-    xml = xml.replaceAllMapped(RegExp(r'<m:sSup[^>]*>(.*?)</m:sSup>', dotAll: true), (match) {
-      final body = match.group(1) ?? '';
-      final eMatch = RegExp(r'<m:e[^>]*>(.*?)</m:e>', dotAll: true).firstMatch(body);
-      final supMatch = RegExp(r'<m:sup[^>]*>(.*?)</m:sup>', dotAll: true).firstMatch(body);
-      final baseText = _extractTextFromXmlChunk(eMatch?.group(1) ?? '');
-      final supText = _extractTextFromXmlChunk(supMatch?.group(1) ?? '');
-      if (supText.isNotEmpty) {
-        return '$baseText${_toSuperscript(supText)}';
-      }
-      return baseText;
-    });
-
-    // 3. Replace subscripts <m:sSub> -> base_sub
-    xml = xml.replaceAllMapped(RegExp(r'<m:sSub[^>]*>(.*?)</m:sSub>', dotAll: true), (match) {
-      final body = match.group(1) ?? '';
-      final eMatch = RegExp(r'<m:e[^>]*>(.*?)</m:e>', dotAll: true).firstMatch(body);
-      final subMatch = RegExp(r'<m:sub[^>]*>(.*?)</m:sub>', dotAll: true).firstMatch(body);
-      final baseText = _extractTextFromXmlChunk(eMatch?.group(1) ?? '');
-      final subText = _extractTextFromXmlChunk(subMatch?.group(1) ?? '');
-      if (subText.isNotEmpty) {
-        return '$baseText${_toSubscript(subText)}';
-      }
-      return baseText;
-    });
-
-    // 4. Replace sub-sup <m:sSubSup> -> base_sub^sup
-    xml = xml.replaceAllMapped(RegExp(r'<m:sSubSup[^>]*>(.*?)</m:sSubSup>', dotAll: true), (match) {
-      final body = match.group(1) ?? '';
-      final eMatch = RegExp(r'<m:e[^>]*>(.*?)</m:e>', dotAll: true).firstMatch(body);
-      final subMatch = RegExp(r'<m:sub[^>]*>(.*?)</m:sub>', dotAll: true).firstMatch(body);
-      final supMatch = RegExp(r'<m:sup[^>]*>(.*?)</m:sup>', dotAll: true).firstMatch(body);
-      final baseText = _extractTextFromXmlChunk(eMatch?.group(1) ?? '');
-      final subText = _extractTextFromXmlChunk(subMatch?.group(1) ?? '');
-      final supText = _extractTextFromXmlChunk(supMatch?.group(1) ?? '');
-      return '$baseText${_toSubscript(subText)}${_toSuperscript(supText)}';
-    });
-
-    // 5. Replace radicals <m:rad> -> √(elem)
-    xml = xml.replaceAllMapped(RegExp(r'<m:rad[^>]*>(.*?)</m:rad>', dotAll: true), (match) {
-      final body = match.group(1) ?? '';
-      final degMatch = RegExp(r'<m:deg[^>]*>(.*?)</m:deg>', dotAll: true).firstMatch(body);
-      final eMatch = RegExp(r'<m:e[^>]*>(.*?)</m:e>', dotAll: true).firstMatch(body);
-      final degText = _extractTextFromXmlChunk(degMatch?.group(1) ?? '');
-      final elemText = _extractTextFromXmlChunk(eMatch?.group(1) ?? '');
-      if (degText.isNotEmpty && degText != '2') {
-        return '${_toSuperscript(degText)}√($elemText)';
-      }
-      return '√($elemText)';
-    });
-
-    // 6. Replace runs <w:r> considering superscripts/subscripts in <w:rPr>
-    // However, if we already parsed math elements, we should only parse non-math runs, 
-    // or just parse everything left if sb is empty. 
-    // To handle mixed text and math properly, we iterate over both <m:oMath> and <w:r> sequentially,
-    // but a simpler fallback is to just strip remaining xml tags and extract text.
-    
-    // Instead of doing regex replace for math and then regex for runs which can cause double-parsing or missed text,
-    // we should extract text from all <w:r> and <m:r> tags sequentially.
-    
     return _parseParagraphSequentially(pContent).trim();
   }
 
@@ -550,26 +474,89 @@ class TestProvider extends ChangeNotifier {
     List<String> lines, [
     List<EduPlanTopicModel>? topics,
   ]) {
-    List<QuestionModel> questions = [];
+    List<_TempParsedQuestion> rawParsedList = [];
     QuestionModel? currentQuestion;
+    String? currentNumCode;
+    List<String> currentRelatedCodes = [];
     int trCounter = 1;
-    Map<String, int> firstTrOfMajor = {};
+
+    // Pattern to match question header: e.g. "1.1)[2.3,5.7] title", "1.1) title", "1.1 [2.3] title"
+    final qHeaderRegex = RegExp(
+      r'^\s*(\d+(?:\.\d+)?)\s*[\)\.]?\s*(?:\[([^\]]+)\])?\s*(.*)',
+    );
+
+    // Pattern to check topic header line like "2-mavzu: ...", "2. mavzu: ..."
+    final topicHeaderRegex = RegExp(
+      r'^\s*\d+[\s\-\.]*mavzu',
+      caseSensitive: false,
+    );
+
+    EduPlanTopicModel? activeTopic;
 
     for (var line in lines) {
-      // Check if line is a question start: "1.1) Question text" or "1.1 Question text" or "3.3)Python"
-      final qMatch = RegExp(r'^(\d+)\.(\d+)\s*[\)\.]?\s*(.*)').firstMatch(line);
+      final trimmedLine = line.trim();
+      if (trimmedLine.isEmpty) continue;
 
-      if (qMatch != null) {
-        if (currentQuestion != null) {
-          questions.add(_finalizeQuestionType(currentQuestion));
+      // Check if line is a topic header line
+      if (topicHeaderRegex.hasMatch(trimmedLine)) {
+        final numMatch = RegExp(r'^\s*(\d+)').firstMatch(trimmedLine);
+        if (numMatch != null) {
+          final majorNum = int.tryParse(numMatch.group(1) ?? '1') ?? 1;
+          if (topics != null && topics.isNotEmpty) {
+            for (var t in topics) {
+              if (t.tr == majorNum) {
+                activeTopic = t;
+                break;
+              }
+            }
+          }
+          activeTopic ??= EduPlanTopicModel(
+            tr: majorNum,
+            name: '$majorNum-mavzu',
+            soat: 2,
+            type: 'Amaliy',
+          );
+        }
+        continue;
+      }
+
+      // Check if line is a question start
+      final qMatch = qHeaderRegex.firstMatch(trimmedLine);
+
+      if (qMatch != null &&
+          !RegExp(r'^[A-Za-z]\)').hasMatch(trimmedLine) &&
+          !trimmedLine.startsWith('#') &&
+          !trimmedLine.startsWith('@')) {
+        final fullNumStr = qMatch.group(1) ?? '1';
+        final majorStr = fullNumStr.contains('.') ? fullNumStr.split('.').first : fullNumStr;
+        final majorNum = int.tryParse(majorStr) ?? 1;
+        final rawBrackets = qMatch.group(2) ?? '';
+        final title = (qMatch.group(3) ?? '').trim();
+
+        // Extract related codes from brackets if present e.g. [2.3,5.7]
+        List<String> relatedCodes = [];
+        if (rawBrackets.trim().isNotEmpty) {
+          relatedCodes = rawBrackets
+              .split(',')
+              .map((s) => s.trim())
+              .where((s) => s.isNotEmpty)
+              .toList();
         }
 
-        final majorStr = qMatch.group(1) ?? '1';
-        final majorNum = int.tryParse(majorStr) ?? 1;
-        final title = (qMatch.group(3) ?? '').trim();
+        if (currentQuestion != null) {
+          rawParsedList.add(
+            _TempParsedQuestion(
+              numCode: currentNumCode ?? '',
+              relatedCodes: currentRelatedCodes,
+              question: _finalizeQuestionType(currentQuestion),
+            ),
+          );
+        }
+
         final tr = trCounter++;
 
-        EduPlanTopicModel? matchedTopic;
+        // Determine topic for this question
+        EduPlanTopicModel? matchedTopic = activeTopic;
         if (topics != null && topics.isNotEmpty) {
           for (var t in topics) {
             if (t.tr == majorNum) {
@@ -577,9 +564,7 @@ class TestProvider extends ChangeNotifier {
               break;
             }
           }
-          if (matchedTopic == null &&
-              majorNum - 1 >= 0 &&
-              majorNum - 1 < topics.length) {
+          if (matchedTopic == null && majorNum - 1 >= 0 && majorNum - 1 < topics.length) {
             matchedTopic = topics[majorNum - 1];
           }
         }
@@ -591,12 +576,8 @@ class TestProvider extends ChangeNotifier {
           type: 'Amaliy',
         );
 
-        List<int> related = [];
-        if (firstTrOfMajor.containsKey(majorStr)) {
-          related.add(firstTrOfMajor[majorStr]!);
-        } else {
-          firstTrOfMajor[majorStr] = tr;
-        }
+        currentNumCode = fullNumStr;
+        currentRelatedCodes = relatedCodes;
 
         currentQuestion = QuestionModel(
           title: title,
@@ -604,12 +585,12 @@ class TestProvider extends ChangeNotifier {
           type: 'SINGLE_CHOICE',
           minimumTime: 0,
           tr: tr,
-          relatedQuestionTrs: related,
+          relatedQuestionTrs: const [],
           options: [],
         );
       } else if (currentQuestion != null) {
         // Parse options or title continuation
-        if (line.startsWith('@')) {
+        if (trimmedLine.startsWith('@')) {
           currentQuestion = QuestionModel(
             title: currentQuestion.title,
             mavzu: currentQuestion.mavzu,
@@ -619,23 +600,23 @@ class TestProvider extends ChangeNotifier {
             relatedQuestionTrs: currentQuestion.relatedQuestionTrs,
             options: currentQuestion.options,
           );
-          String text = line.substring(1).trim();
+          String text = trimmedLine.substring(1).trim();
           if (text.isNotEmpty) {
             currentQuestion.options.add(OptionModel(text: text, isTrue: true));
           }
-        } else if (line.startsWith('#')) {
-          String text = line.replaceAll(RegExp(r'^#+'), '').trim();
+        } else if (trimmedLine.startsWith('#')) {
+          String text = trimmedLine.replaceAll(RegExp(r'^#+'), '').trim();
           text = text.replaceAll(RegExp(r'^[A-Za-z0-9]+[\)\.]\s*'), '').trim();
           currentQuestion.options.add(OptionModel(text: text, isTrue: true));
-        } else if (RegExp(r'^[A-Za-z0-9]+[\)\.]').hasMatch(line)) {
-          String text = line
+        } else if (RegExp(r'^[A-Za-z0-9]+[\)\.]').hasMatch(trimmedLine)) {
+          String text = trimmedLine
               .replaceAll(RegExp(r'^[A-Za-z0-9]+[\)\.]\s*'), '')
               .trim();
           currentQuestion.options.add(OptionModel(text: text, isTrue: false));
         } else if (currentQuestion.options.isEmpty) {
           // Continuation of multi-line question title
           currentQuestion = QuestionModel(
-            title: '${currentQuestion.title} $line'.trim(),
+            title: '${currentQuestion.title} $trimmedLine'.trim(),
             mavzu: currentQuestion.mavzu,
             type: currentQuestion.type,
             tr: currentQuestion.tr,
@@ -644,7 +625,7 @@ class TestProvider extends ChangeNotifier {
             options: currentQuestion.options,
           );
         } else {
-          String text = line
+          String text = trimmedLine
               .replaceAll(RegExp(r'^[A-Za-z0-9]+[\)\.]\s*'), '')
               .trim();
           if (text.isNotEmpty) {
@@ -655,10 +636,46 @@ class TestProvider extends ChangeNotifier {
     }
 
     if (currentQuestion != null) {
-      questions.add(_finalizeQuestionType(currentQuestion));
+      rawParsedList.add(
+        _TempParsedQuestion(
+          numCode: currentNumCode ?? '',
+          relatedCodes: currentRelatedCodes,
+          question: _finalizeQuestionType(currentQuestion),
+        ),
+      );
     }
 
-    return questions;
+    // Map numCode -> tr (e.g. "1.1" -> 1, "2.3" -> 3, "5.7" -> 4)
+    final Map<String, int> numCodeToTr = {};
+    for (var temp in rawParsedList) {
+      if (temp.numCode.isNotEmpty) {
+        numCodeToTr[temp.numCode] = temp.question.tr;
+      }
+    }
+
+    // Second pass: Resolve related codes to question trs
+    final List<QuestionModel> finalizedQuestions = [];
+    for (var temp in rawParsedList) {
+      List<int> resolvedTrs = [];
+      for (var code in temp.relatedCodes) {
+        if (numCodeToTr.containsKey(code)) {
+          resolvedTrs.add(numCodeToTr[code]!);
+        } else {
+          final pInt = int.tryParse(code);
+          if (pInt != null) {
+            resolvedTrs.add(pInt);
+          }
+        }
+      }
+
+      finalizedQuestions.add(
+        temp.question.copyWith(
+          relatedQuestionTrs: resolvedTrs,
+        ),
+      );
+    }
+
+    return finalizedQuestions;
   }
 
   QuestionModel _finalizeQuestionType(QuestionModel q) {
@@ -699,4 +716,16 @@ class TestProvider extends ChangeNotifier {
 
     return finalized.withCalculatedMinimumTime();
   }
+}
+
+class _TempParsedQuestion {
+  final String numCode;
+  final List<String> relatedCodes;
+  final QuestionModel question;
+
+  _TempParsedQuestion({
+    required this.numCode,
+    required this.relatedCodes,
+    required this.question,
+  });
 }
