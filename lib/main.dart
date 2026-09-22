@@ -1,4 +1,6 @@
+import 'package:bilim_scan/core/widgets/tactical_background.dart';
 import 'package:bilim_scan/screens/login/student_login_screen.dart';
+import 'package:bilim_scan/screens/test_background_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/constants/app_colors.dart';
@@ -77,7 +79,7 @@ class BilimScanApp extends StatelessWidget {
             surface: AppColors.cardDark,
           ),
         ),
-        home: const SplashScreen(),
+        home:  SplashScreen(),
       ),
     );
   }
