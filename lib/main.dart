@@ -1,3 +1,4 @@
+import 'package:bilim_scan/screens/login/student_login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/constants/app_colors.dart';
@@ -17,10 +18,11 @@ final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 void navigateToLogin() {
   navigatorKey.currentState?.pushAndRemoveUntil(
     PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
+      pageBuilder: (context, animation, secondaryAnimation) => const StudentLoginScreen(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return FadeTransition(opacity: animation, child: child);
       },
+
       transitionDuration: const Duration(milliseconds: 600),
     ),
     (route) => false,
