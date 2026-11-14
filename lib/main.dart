@@ -1,5 +1,5 @@
 import 'package:bilim_scan/core/widgets/tactical_background.dart';
-import 'package:bilim_scan/screens/login/student_login_screen.dart';
+import 'package:bilim_scan/core/config/app_config.dart';
 import 'package:bilim_scan/screens/test_background_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +12,6 @@ import 'providers/catalog_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/student_exam_provider.dart';
 import 'screens/splash/splash_screen.dart';
-import 'screens/login/login_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
@@ -20,7 +19,7 @@ final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 void navigateToLogin() {
   navigatorKey.currentState?.pushAndRemoveUntil(
     PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => const StudentLoginScreen(),
+      pageBuilder: (context, animation, secondaryAnimation) => AppConfig.loginScreen(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return FadeTransition(opacity: animation, child: child);
       },
