@@ -44,6 +44,10 @@ class CatalogProvider extends ChangeNotifier {
     return _fanlar.where((item) => (item.name ?? '').toLowerCase().contains(_searchQuery.toLowerCase())).toList();
   }
 
+  /// Qidiruv filtrisiz barcha guruhlar (import paytida mavjud guruhni topish uchun)
+  List<GuruhModel> get allGuruhlar => _guruhlar;
+  List<CatalogResponse> get allBosqichlar => _bosqichlar;
+
   List<GuruhModel> get guruhlar {
     if (_searchQuery.isEmpty) return _guruhlar;
     return _guruhlar.where((item) => (item.name ?? '').toLowerCase().contains(_searchQuery.toLowerCase())).toList();

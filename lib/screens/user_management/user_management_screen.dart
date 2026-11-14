@@ -12,6 +12,8 @@ import '../../models/user_create_dto.dart';
 import '../../models/user_response_dto.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../services/credentials_service.dart';
+import '../../services/docx_import_service.dart';
 import '../../services/file_service.dart';
 
 class UserManagementScreen extends StatefulWidget {
@@ -74,6 +76,16 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 catalogProvider.fetchAllCatalogs();
               },
             ),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.upload_file_outlined, size: 18, color: AppColors.goldPrimary),
+              label: Text('WORD\'DAN IMPORT', style: AppTextStyles.buttonText.copyWith(fontSize: 12, color: AppColors.goldPrimary)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.goldPrimary),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              ),
+              onPressed: () => _importFromDocx(context, userProvider, catalogProvider),
+            ),
+            const SizedBox(width: 10),
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: ElevatedButton.icon(
@@ -371,6 +383,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 '${_selectedBosqich?.name ?? ''}  👉  2-BOSQICH: GURUHNIBI TANLANG',
                 style: AppTextStyles.badgeText.copyWith(color: AppColors.emeraldAccent, fontSize: 11),
               ),
+              const Spacer(),
+              if (filteredGuruhlar.isNotEmpty)
+                _buildExportCredentialsButton(
+                  userProvider,
+                  filteredGuruhlar.map((g) => g.id).whereType<String>().toSet(),
+                  '${_selectedBosqich?.name ?? 'bosqich'}_login_parollar',
+                ),
             ],
           ),
         ),
@@ -491,6 +510,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 '${_selectedBosqich?.name ?? ''}  👉  ${_selectedGuruh?.name ?? ''}  👉  3-BOSQICH: KURSANTLAR (${filteredStudents.length} TA)',
                 style: AppTextStyles.badgeText.copyWith(color: AppColors.goldPrimary, fontSize: 11),
               ),
+              const Spacer(),
+              if (filteredStudents.isNotEmpty && _selectedGuruh?.id != null)
+                _buildExportCredentialsButton(
+                  userProvider,
+                  {_selectedGuruh!.id!},
+                  '${_selectedGuruh?.name ?? 'guruh'}_login_parollar',
+                ),
             ],
           ),
         ),
@@ -1289,6 +1315,293 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  // GURUH KESIMIDA LOGIN/PAROLLARNI WORD'GA EKSPORT QILISH
+  Widget _buildExportCredentialsButton(UserProvider userProvider, Set<String> guruhIds, String fileName) {
+    return OutlinedButton.icon(
+      icon: const Icon(Icons.key_outlined, size: 14, color: AppColors.goldPrimary),
+      label: const Text('LOGIN/PAROLLARNI EKSPORT', style: TextStyle(fontSize: 11)),
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(color: AppColors.goldPrimary),
+        foregroundColor: AppColors.goldPrimary,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      ),
+      onPressed: () async {
+        final credentials = await userProvider.credentialsForGroups(guruhIds);
+        if (!mounted) return;
+        await _exportCredentials(credentials, fileName);
+      },
+    );
+  }
+
+  Future<void> _exportCredentials(List<UserCredential> credentials, String fileName) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (credentials.isEmpty) {
+      messenger.showSnackBar(const SnackBar(content: Text('Eksport uchun kursantlar topilmadi'), backgroundColor: AppColors.warning));
+      return;
+    }
+
+    final safeName = fileName.replaceAll(RegExp(r'[\\/:*?"<>|\s]+'), '_');
+    final saved = await CredentialsService.exportToWord(credentials, safeName);
+    if (saved == null) return;
+
+    final missing = credentials.where((c) => c.password.isEmpty).length;
+    messenger.showSnackBar(SnackBar(
+      content: Text(missing == 0
+          ? '✅ ${credentials.length} nafar kursant login/paroli Word faylga saqlandi'
+          : '✅ Saqlandi. $missing nafar kursantning paroli bu kompyuterda saqlanmagan (tizimga boshqa joyda qo\'shilgan) — ularda "—" turibdi'),
+      backgroundColor: missing == 0 ? AppColors.emeraldAccent : AppColors.warning,
+    ));
+  }
+
+  // WORD (.docx) RO'YXATIDAN KURSANTLARNI GURUH KESIMIDA IMPORT QILISH
+  Future<void> _importFromDocx(BuildContext context, UserProvider userProvider, CatalogProvider catalogProvider) async {
+    final messenger = ScaffoldMessenger.of(context);
+    DocxImportResult? result;
+    try {
+      result = await DocxImportService.instance.pickAndParse();
+    } catch (e) {
+      final msg = e is FormatException ? e.message : e.toString();
+      messenger.showSnackBar(SnackBar(content: Text('Word faylni o\'qishda xatolik: $msg'), backgroundColor: AppColors.error));
+      return;
+    }
+    if (result == null || !context.mounted) return;
+
+    final bosqichlar = catalogProvider.allBosqichlar;
+    if (bosqichlar.isEmpty) {
+      messenger.showSnackBar(const SnackBar(
+        content: Text('Avval Kataloglar bo\'limida kamida bitta kurs bosqichi yarating.'),
+        backgroundColor: AppColors.warning,
+      ));
+      return;
+    }
+
+    final data = result;
+    GuruhModel? existingGuruh(String name) =>
+        catalogProvider.allGuruhlar.where((g) => groupKey(g.name ?? '') == groupKey(name)).firstOrNull;
+
+    // Har bir guruh uchun bosqich: mavjud guruhniki, aks holda hozir ochilgan yoki birinchi bosqich
+    final bosqichIdByGroup = {
+      for (final g in data.groups)
+        g.name: existingGuruh(g.name)?.bosqich?.id ?? _selectedBosqich?.id ?? bosqichlar.first.id!,
+    };
+    var importing = false;
+    var done = 0;
+
+    final importResult = await showDialog<DocxUserImportResult>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return AlertDialog(
+            backgroundColor: AppColors.cardDark,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: AppColors.goldPrimary, width: 1.5),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.upload_file_outlined, color: AppColors.goldPrimary),
+                const SizedBox(width: 10),
+                Text('WORD\'DAN KURSANTLARNI IMPORT QILISH', style: AppTextStyles.titleHeader.copyWith(fontSize: 16)),
+              ],
+            ),
+            content: SizedBox(
+              width: 720,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(data.fileName, style: AppTextStyles.bodyText.copyWith(color: AppColors.goldPrimary, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${data.groups.length} ta guruh, ${data.totalStudents} nafar kursant, ${data.totalPhotos} ta foto topildi',
+                    style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 380),
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final group in data.groups) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.inputBackground,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.cardBorder),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.groups_3_outlined, color: AppColors.emeraldAccent, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '${group.name}  •  ${group.students.length} nafar'
+                                    '${existingGuruh(group.name) == null ? '  (yangi guruh)' : ''}',
+                                    style: AppTextStyles.titleHeader.copyWith(fontSize: 13, color: AppColors.textPrimary),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 220,
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: bosqichIdByGroup[group.name],
+                                      dropdownColor: AppColors.cardDark,
+                                      isExpanded: true,
+                                      items: bosqichlar
+                                          .map((b) => DropdownMenuItem(
+                                                value: b.id,
+                                                child: Text(b.name ?? 'Bosqich', overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                                              ))
+                                          .toList(),
+                                      onChanged: importing ? null : (v) => setModalState(() => bosqichIdByGroup[group.name] = v!),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          for (final s in group.students)
+                            ListTile(
+                              dense: true,
+                              leading: CircleAvatar(
+                                radius: 18,
+                                backgroundColor: AppColors.inputBackground,
+                                backgroundImage: s.photoBytes != null ? MemoryImage(s.photoBytes!) : null,
+                                child: s.photoBytes == null ? const Icon(Icons.person, size: 18, color: AppColors.goldPrimary) : null,
+                              ),
+                              title: Text(
+                                '${s.rowNumber}. ${s.fullName}',
+                                style: AppTextStyles.bodyText.copyWith(color: AppColors.textPrimary, fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: Text(
+                                '${s.birthDate ?? '—'}  •  ${s.phone ?? 'tel. yo\'q'}',
+                                style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 11),
+                              ),
+                            ),
+                          const SizedBox(height: 8),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (importing) ...[
+                    LinearProgressIndicator(
+                      value: data.totalStudents == 0 ? null : done / data.totalStudents,
+                      color: AppColors.goldPrimary,
+                      backgroundColor: AppColors.inputBackground,
+                    ),
+                    const SizedBox(height: 6),
+                    Text('$done / ${data.totalStudents} yaratildi...', style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 12)),
+                  ] else
+                    Text(
+                      'Guruh tizimda bo\'lmasa, tanlangan bosqichda yaratiladi. Har bir kursantga F.I.O dan login va tasodifiy parol '
+                      'generatsiya qilinadi, Word\'dagi foto profil rasmi bo\'ladi. Shu guruhda F.I.Sh. bir xil kursant bo\'lsa, o\'tkazib yuboriladi.',
+                      style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 12),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: importing ? null : () => Navigator.of(dialogContext).pop(),
+                child: Text('BEKOR QILISH', style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted)),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.goldPrimary, foregroundColor: AppColors.backgroundDark),
+                icon: importing
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                    : const Icon(Icons.download_done, size: 18),
+                label: Text(importing ? 'YUKLANMOQDA...' : 'IMPORT QILISH'),
+                onPressed: importing
+                    ? null
+                    : () async {
+                        setModalState(() => importing = true);
+                        final res = await userProvider.importStudentsFromDocx(
+                          data.groups,
+                          bosqichIdByGroup: bosqichIdByGroup,
+                          catalogProvider: catalogProvider,
+                          onProgress: (d, _) => setModalState(() => done = d),
+                        );
+                        if (dialogContext.mounted) Navigator.of(dialogContext).pop(res);
+                      },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (importResult == null || !mounted) return;
+    _showImportResultDialog(importResult, data.fileName);
+  }
+
+  void _showImportResultDialog(DocxUserImportResult res, String sourceFileName) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.cardDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.emeraldAccent, width: 1.5),
+        ),
+        title: Text('IMPORT YAKUNLANDI', style: AppTextStyles.titleHeader.copyWith(fontSize: 16)),
+        content: SizedBox(
+          width: 560,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildBadge(Icons.check_circle_outline, '${res.created.length} nafar kursant yaratildi', AppColors.emeraldAccent),
+              if (res.skipped.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                _buildBadge(Icons.skip_next_outlined, '${res.skipped.length} nafari tizimda bor edi — o\'tkazib yuborildi', AppColors.warning),
+              ],
+              if (res.failed.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                _buildBadge(Icons.error_outline, '${res.failed.length} nafarini yaratib bo\'lmadi', AppColors.error),
+                const SizedBox(height: 6),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 160),
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: res.failed
+                        .map((f) => Text('• $f', style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 12)))
+                        .toList(),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Text(
+                'Generatsiya qilingan login va parollarni hozir guruh kesimida Word faylga eksport qiling. '
+                'Keyinroq ham guruh sahifasidagi "LOGIN/PAROLLARNI EKSPORT" tugmasi orqali olish mumkin.',
+                style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text('YOPISH', style: AppTextStyles.bodyText.copyWith(color: AppColors.textMuted)),
+          ),
+          if (res.created.isNotEmpty)
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.goldPrimary, foregroundColor: AppColors.backgroundDark),
+              icon: const Icon(Icons.key_outlined, size: 18),
+              label: const Text('LOGIN/PAROLLARNI EKSPORT'),
+              onPressed: () {
+                final base = sourceFileName.replaceAll(RegExp(r'\.docx$', caseSensitive: false), '');
+                _exportCredentials(res.created, '${base}_login_parollar');
+              },
+            ),
+        ],
       ),
     );
   }
